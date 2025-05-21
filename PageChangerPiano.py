@@ -136,9 +136,9 @@ class PartituraApp:
     def _update_title(self):
         if self.doc:
             name = os.path.basename(self.pdf_queue[self.current_pdf_index])
-            self.master.title(f"Visor de Partitura V.1.1 - {name} (Página {self.current_page+1}/{self.num_pages})")
+            self.master.title(f"Visor de Partitura V.1.2 - {name} (Página {self.current_page+1}/{self.num_pages})")
         else:
-            self.master.title("Visor de Partitura V.1.1")
+            self.master.title("Visor de Partitura V.1.2")
 
     def _update_queue_view(self):
         self.lst_queue.delete(0, END)
@@ -155,6 +155,9 @@ class PartituraApp:
             messagebox.showinfo("PDF agregado", f"{path} se agregó a la cola.")
             if not self.doc:
                 self.cargar_pdf_actual()
+                # Mostrar tras cargar
+                self.current_page = 0
+                self.mostrar_pagina()
 
     def guardar_lista(self):
         if self.pdf_queue:
@@ -169,6 +172,9 @@ class PartituraApp:
             self.current_pdf_index = 0
             self._update_queue_view()
             self.cargar_pdf_actual()
+            # Mostrar tras cargar lista
+            self.current_page = 0
+            self.mostrar_pagina()
 
     def cargar_pdf_actual(self):
         if not self.pdf_queue or self.current_pdf_index >= len(self.pdf_queue):
@@ -177,50 +183,93 @@ class PartituraApp:
         try:
             self.doc = fitz.open(path)
             self.num_pages = len(self.doc)
-            self.current_page = 0
+            # current_page debe ser asignado antes de mostrar en el contexto de llamada
+            # No llamamos a mostrar_pagina aquí para evitar duplicados
             self.page_cache.clear()
             self._update_queue_view()
-            self.mostrar_pagina()
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo abrir el PDF:\n{e}")
+
+
+    def pagina_anterior(self):
+        # Retrocede de dos en dos páginas o cambia de PDF si es necesario
+        if self.current_page >= 2:
+            self.current_page -= 2
+            self.mostrar_pagina()
+        elif self.current_page == 1:
+            # Si está en la segunda página, ir a la primera
+            self.current_page = 0
+            self.mostrar_pagina()
+        elif self.current_pdf_index > 0:
+            # Cargar PDF anterior y posicionarse en su último par
+            self.current_pdf_index -= 1
+            self.cargar_pdf_actual()
+            # Calcular último par en el PDF cargado
+            if self.num_pages % 2 == 0:
+                self.current_page = self.num_pages - 2
+            else:
+                self.current_page = self.num_pages - 1
+            self.mostrar_pagina()
+        # Si está en la primera página del primer PDF, no hace nada
+
+    def pagina_siguiente(self):
+        # Si queda al menos otro par completo (dos páginas) adelante:
+        if self.current_page + 2 <= self.num_pages - 1:
+            self.current_page += 2
+            self.mostrar_pagina()
+        # Si el documento tiene un número impar de páginas y solo queda una al final:
+        elif self.num_pages % 2 == 1 and self.current_page + 1 < self.num_pages:
+            self.current_page += 1
+            self.mostrar_pagina()
+        # En cualquier otro caso (se acabó el PDF), pasa al siguiente PDF de la cola:
+        elif self.current_pdf_index < len(self.pdf_queue) - 1:
+            self.current_pdf_index += 1
+            self.cargar_pdf_actual()
+            self.current_page = 0
+            self.mostrar_pagina()
+        # Si no hay más PDFs ni páginas, no hace nada
 
     def mostrar_pagina(self):
         if not self.doc:
             return
-        if self.current_page in self.page_cache:
-            img_pil = self.page_cache[self.current_page]
-        else:
-            page = self.doc.load_page(self.current_page)
-            mat = fitz.Matrix(self.zoom, self.zoom)
-            pix = page.get_pixmap(matrix=mat)
-            arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
-            if pix.n == 4:
-                arr = arr[:, :, :3]
-            img_rgb = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
-            img_pil = Image.fromarray(img_rgb)
-            self.page_cache[self.current_page] = img_pil
+
+        pages_to_display = []
+        # Siempre mostrar par: página actual + siguiente (o blanco si no existe)
+        for offset in (0, 1):
+            page_index = self.current_page + offset
+            if 0 <= page_index < self.num_pages:
+                if page_index in self.page_cache:
+                    img = self.page_cache[page_index]
+                else:
+                    page = self.doc.load_page(page_index)
+                    mat = fitz.Matrix(self.zoom, self.zoom)
+                    pix = page.get_pixmap(matrix=mat)
+                    arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
+                    if pix.n == 4:
+                        arr = arr[:, :, :3]
+                    img_rgb = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
+                    img = Image.fromarray(img_rgb)
+                    self.page_cache[page_index] = img
+            else:
+                # Página en blanco para pares impares
+                img = Image.new("RGB", (800, 1000), color=(211, 211, 211))
+            pages_to_display.append(img)
+
+        # Combinar páginas lado a lado
+        widths, heights = zip(*(img.size for img in pages_to_display))
+        combined = Image.new("RGB", (sum(widths), max(heights)), color=(255, 255, 255))
+        x = 0
+        for img in pages_to_display:
+            combined.paste(img, (x, 0))
+            x += img.width
+
+        # Ajustar al canvas
         w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
-        img_resized = img_pil.resize((w, h), Image.LANCZOS)
+        img_resized = combined.resize((w, h), Image.LANCZOS)
         self.tk_img = ImageTk.PhotoImage(img_resized)
         self.canvas.delete("all")
         self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
         self._update_title()
-
-    def pagina_anterior(self):
-        if self.current_page > 0:
-            self.current_page -= 1
-        elif self.current_pdf_index > 0:
-            self.current_pdf_index -= 1
-            self.cargar_pdf_actual()
-        self.mostrar_pagina()
-
-    def pagina_siguiente(self):
-        if self.current_page < self.num_pages - 1:
-            self.current_page += 1
-        elif self.current_pdf_index < len(self.pdf_queue) - 1:
-            self.current_pdf_index += 1
-            self.cargar_pdf_actual()
-        self.mostrar_pagina()
 
     def verificar_midi(self):
         if midi_input.poll():
