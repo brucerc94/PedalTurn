@@ -115,6 +115,8 @@ class PartituraApp:
         Button(self.btn_frame, text="Cargar lista", command=self.cargar_lista).grid(row=0, column=4, padx=5)
         Button(self.btn_frame, text="Cambiar pedal MIDI", command=self.cambiar_pedal).grid(row=0, column=5, padx=5)
         Button(self.btn_frame, text="Cerrar", command=self.cerrar_aplicacion).grid(row=0, column=6, padx=5)
+        Button(self.btn_frame, text="Eliminar PDF", command=self.eliminar_pdf).grid(row=0, column=7, padx=5)
+
 
         # Frame para mostrar la cola
         self.queue_frame = Frame(master)
@@ -285,6 +287,36 @@ class PartituraApp:
         if nuevo_cc is not None:
             global MIDI_PEDAL_CC
             MIDI_PEDAL_CC = nuevo_cc
+
+    def eliminar_pdf(self):
+        if not self.pdf_queue:
+            messagebox.showwarning("Error", "La cola está vacía.")
+            return
+
+        # Elimina el PDF actual
+        eliminado = self.pdf_queue.pop(self.current_pdf_index)
+        messagebox.showinfo("PDF eliminado", f"{eliminado} ha sido removido de la cola.")
+
+        # Si tras la eliminación ya no hay PDFs:
+        if not self.pdf_queue:
+            self.doc = None
+            self.current_page = 0
+            self.num_pages = 0
+            self.page_cache.clear()
+            self.canvas.delete("all")
+            self._update_queue_view()
+            self._update_title()
+            return
+
+        # Ajusta el índice actual si estaba al final
+        if self.current_pdf_index >= len(self.pdf_queue):
+            self.current_pdf_index = len(self.pdf_queue) - 1
+
+        # Recarga el nuevo PDF activo y muestra su primera página
+        self.cargar_pdf_actual()
+        self.current_page = 0
+        self.mostrar_pagina()
+
 
     def cerrar_aplicacion(self):
         try:
