@@ -127,6 +127,7 @@ class PartituraApp:
         scrollbar = Scrollbar(self.queue_frame, orient=VERTICAL, command=self.lst_queue.yview)
         scrollbar.pack(side="right", fill="y")
         self.lst_queue.config(yscrollcommand=scrollbar.set)
+        self.lst_queue.bind("<<ListboxSelect>>", self.on_select)
 
         # Canvas de visualización
         self.canvas = Canvas(master, width=800, height=600)
@@ -138,9 +139,9 @@ class PartituraApp:
     def _update_title(self):
         if self.doc:
             name = os.path.basename(self.pdf_queue[self.current_pdf_index])
-            self.master.title(f"Visor de Partitura V.1.2 - {name} (Página {self.current_page+1}/{self.num_pages})")
+            self.master.title(f"Visor de Partitura V.1.3 - {name} (Página {self.current_page+1}/{self.num_pages})")
         else:
-            self.master.title("Visor de Partitura V.1.2")
+            self.master.title("Visor de Partitura V.1.3")
 
     def _update_queue_view(self):
         self.lst_queue.delete(0, END)
@@ -148,6 +149,26 @@ class PartituraApp:
             name = os.path.basename(path)
             prefix = "→ " if i == self.current_pdf_index else "   "
             self.lst_queue.insert(END, prefix + name)
+        if self.pdf_queue:
+            self.lst_queue.see(self.current_pdf_index)
+
+
+    def on_select(self, event):
+        # event.widget es self.lst_queue
+        sel = event.widget.curselection()
+        if not sel:
+            return
+        idx = sel[0]
+        # Si ya estábamos en ese índice, no hacemos nada
+        if idx == self.current_pdf_index:
+            return
+
+        # Actualizar índice, recargar y mostrar
+        self.current_pdf_index = idx
+        self.cargar_pdf_actual()
+        self.current_page = 0
+        self.mostrar_pagina()
+                
 
     def agregar_pdf(self):
         path = elegir_pdf()
