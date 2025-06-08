@@ -21,8 +21,8 @@ def elegir_pdf():
 def guardar_lista(lista):
     path = filedialog.asksaveasfilename(
         title="Guardar lista de PDFs",
-        filetypes=[("Archivos JSON", "*.json")],
-        defaultextension=".json"
+        filetypes=[("Archivos VDP", "*.vdp")],
+        defaultextension=".vdp"
     )
     if path:
         with open(path, 'w') as f:
@@ -31,7 +31,7 @@ def guardar_lista(lista):
 def cargar_lista():
     path = filedialog.askopenfilename(
         title="Cargar lista de PDFs",
-        filetypes=[("Archivos JSON", "*.json")]
+        filetypes=[("Archivos VDP", "*.vdp")]
     )
     if path:
         with open(path, 'r') as f:
@@ -342,15 +342,17 @@ class PartituraApp:
     def cerrar_aplicacion(self):
         try:
             midi_input.close()
-        except:
+        except Exception:
             pass
-        pygame.midi.quit()
+        try:
+            pygame.midi.quit()
+        except Exception:
+            pass
         self.master.destroy()
 
 # === INICIAR APP ===
-root = Tk()
-app = PartituraApp(root)
-root.mainloop()
-# === FINALIZACIÓN ===
-midi_input.close()
-pygame.midi.quit()
+if __name__ == "__main__":
+    root = Tk()
+    app = PartituraApp(root)
+    root.mainloop()
+
