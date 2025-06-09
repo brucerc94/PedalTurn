@@ -4,41 +4,25 @@ import pygame.midi
 import numpy as np
 import json
 import os
-from tkinter import Tk, Button, Label, Canvas, Listbox, Scrollbar, filedialog, simpledialog, messagebox, VERTICAL, END
+import threading
+import queue
+from tkinter import (
+    Tk, Toplevel, Button, Label, Canvas, Listbox, Scrollbar,
+    filedialog, simpledialog, messagebox, VERTICAL, END, Frame
+)
 from PIL import Image, ImageTk
-from tkinter import Frame
 
 # === CONFIGURACIÓN GENERAL ===
 THRESHOLD = 64
 
-# === FUNCIONES PARA MANEJO DE ARCHIVOS ===
+# === FUNCIÓN PARA ELEGIR PDF ===
 def elegir_pdf():
     return filedialog.askopenfilename(
         title="Seleccione el PDF de la partitura",
         filetypes=[("Archivos PDF", "*.pdf")]
     )
 
-def guardar_lista(lista):
-    path = filedialog.asksaveasfilename(
-        title="Guardar lista de PDFs",
-        filetypes=[("Archivos VDP", "*.vdp")],
-        defaultextension=".vdp"
-    )
-    if path:
-        with open(path, 'w') as f:
-            json.dump(lista, f)
-
-def cargar_lista():
-    path = filedialog.askopenfilename(
-        title="Cargar lista de PDFs",
-        filetypes=[("Archivos VDP", "*.vdp")]
-    )
-    if path:
-        with open(path, 'r') as f:
-            return json.load(f)
-    return []
-
-# === FUNCIÓN PARA SELECCIONAR MIDI DESDE UNA LISTA ===
+# === FUNCIÓN PARA SELECCIONAR MIDI ===
 def seleccionar_midi_input():
     dispositivos = []
     for i in range(pygame.midi.get_count()):
@@ -71,7 +55,6 @@ def detectar_cc():
     info.attributes("-topmost", True)
     Label(info, text="Presione el pedal o tecla MIDI que usará para pasar página.").pack(pady=20)
     info.update()
-
     try:
         while True:
             info.update()
@@ -92,33 +75,42 @@ def detectar_cc():
 
 MIDI_PEDAL_CC = None
 
-# === INTERFAZ PRINCIPAL ===
 class PartituraApp:
     def __init__(self, master):
         self.master = master
         self.master.geometry("1000x800")
-        self.pdf_queue = []
+        self.pdf_queue   = []
+        self.video_map   = {}           # mapa PDF → ruta de vídeo
         self.current_pdf_index = 0
-        self.doc = None
-        self.current_page = 0
-        self.num_pages = 0
-        self.page_cache = {}
-        self.zoom = 1
+        self.doc         = None
+        self.current_page= 0
+        self.num_pages   = 0
+        self.page_cache  = {}
+        self.zoom        = 1
 
-        # Frame de botones arriba
+        # estado de la ventana de vídeo
+        self.video_win    = None
+        self.video_label  = None
+        self.video_cap    = None
+        self.video_visible= False
+        self.frame_queue  = queue.Queue(maxsize=1)
+        self.video_thread = None
+
+        # Frame de botones
         self.btn_frame = Frame(master)
         self.btn_frame.pack(pady=5)
-        Button(self.btn_frame, text="← Anterior", command=self.pagina_anterior).grid(row=0, column=0, padx=5)
-        Button(self.btn_frame, text="Siguiente →", command=self.pagina_siguiente).grid(row=0, column=1, padx=5)
+        Button(self.btn_frame, text="← Anterior",       command=self.pagina_anterior).grid(row=0, column=0, padx=5)
+        Button(self.btn_frame, text="Siguiente →",      command=self.pagina_siguiente).grid(row=0, column=1, padx=5)
         Button(self.btn_frame, text="Agregar PDF a cola", command=self.agregar_pdf).grid(row=0, column=2, padx=5)
-        Button(self.btn_frame, text="Guardar lista", command=self.guardar_lista).grid(row=0, column=3, padx=5)
-        Button(self.btn_frame, text="Cargar lista", command=self.cargar_lista).grid(row=0, column=4, padx=5)
+        Button(self.btn_frame, text="Guardar lista",    command=self.guardar_lista).grid(row=0, column=3, padx=5)
+        Button(self.btn_frame, text="Cargar lista",     command=self.cargar_lista).grid(row=0, column=4, padx=5)
         Button(self.btn_frame, text="Cambiar pedal MIDI", command=self.cambiar_pedal).grid(row=0, column=5, padx=5)
-        Button(self.btn_frame, text="Cerrar", command=self.cerrar_aplicacion).grid(row=0, column=6, padx=5)
-        Button(self.btn_frame, text="Eliminar PDF", command=self.eliminar_pdf).grid(row=0, column=7, padx=5)
+        Button(self.btn_frame, text="Agregar video",    command=self.agregar_video).grid(row=0, column=6, padx=5)
+        Button(self.btn_frame, text="Toggle Video",     command=self.toggle_video).grid(row=0, column=7, padx=5)
+        Button(self.btn_frame, text="Eliminar PDF",     command=self.eliminar_pdf).grid(row=0, column=8, padx=5)
+        Button(self.btn_frame, text="Cerrar",           command=self.cerrar_aplicacion).grid(row=0, column=9, padx=5)
 
-
-        # Frame para mostrar la cola
+        # Frame para la cola
         self.queue_frame = Frame(master)
         self.queue_frame.pack(fill="x", padx=10, pady=5)
         Label(self.queue_frame, text="Cola de PDFs:").pack(anchor="w")
@@ -129,7 +121,7 @@ class PartituraApp:
         self.lst_queue.config(yscrollcommand=scrollbar.set)
         self.lst_queue.bind("<<ListboxSelect>>", self.on_select)
 
-        # Canvas de visualización
+        # Canvas para mostrar el PDF
         self.canvas = Canvas(master, width=800, height=600)
         self.canvas.pack(fill="both", expand=True)
 
@@ -139,9 +131,9 @@ class PartituraApp:
     def _update_title(self):
         if self.doc:
             name = os.path.basename(self.pdf_queue[self.current_pdf_index])
-            self.master.title(f"Visor de Partitura V.1.3 - {name} (Página {self.current_page+1}/{self.num_pages})")
+            self.master.title(f"Visor V1.3 - {name} (Página {self.current_page+1}/{self.num_pages})")
         else:
-            self.master.title("Visor de Partitura V.1.3")
+            self.master.title("Visor V1.3")
 
     def _update_queue_view(self):
         self.lst_queue.delete(0, END)
@@ -152,52 +144,159 @@ class PartituraApp:
         if self.pdf_queue:
             self.lst_queue.see(self.current_pdf_index)
 
-
     def on_select(self, event):
-        # event.widget es self.lst_queue
         sel = event.widget.curselection()
-        if not sel:
-            return
+        if not sel: return
         idx = sel[0]
-        # Si ya estábamos en ese índice, no hacemos nada
         if idx == self.current_pdf_index:
             return
-
-        # Actualizar índice, recargar y mostrar
         self.current_pdf_index = idx
+        # programa la recarga para dentro de unos milisegundos
+        self.master.after(20, self._refresh_pdf)
+
+    def _refresh_pdf(self):
+        """Carga el PDF y muestra su página sin bloquear la UI."""
         self.cargar_pdf_actual()
         self.current_page = 0
         self.mostrar_pagina()
-                
 
     def agregar_pdf(self):
         path = elegir_pdf()
         if path:
             self.pdf_queue.append(path)
             self._update_queue_view()
-            messagebox.showinfo("PDF agregado", f"{path} se agregó a la cola.")
+            messagebox.showinfo("PDF agregado", f"{os.path.basename(path)} en cola.")
             if not self.doc:
                 self.cargar_pdf_actual()
-                # Mostrar tras cargar
                 self.current_page = 0
                 self.mostrar_pagina()
 
     def guardar_lista(self):
-        if self.pdf_queue:
-            guardar_lista(self.pdf_queue)
-        else:
-            messagebox.showerror("Error", "La cola de PDFs está vacía.")
+        if not self.pdf_queue:
+            messagebox.showerror("Error", "La cola está vacía."); return
+        path = filedialog.asksaveasfilename(
+            title="Guardar lista de PDFs y vídeos",
+            filetypes=[("Archivos VDP", "*.vdp")],
+            defaultextension=".vdp"
+        )
+        if not path: return
+        data = {"pdf_queue": self.pdf_queue, "video_map": self.video_map}
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+            messagebox.showinfo("Éxito", "Guardado correctamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar: {e}")
 
     def cargar_lista(self):
-        lista = cargar_lista()
-        if lista:
-            self.pdf_queue = lista
+        path = filedialog.askopenfilename(
+            title="Cargar lista de PDFs y vídeos",
+            filetypes=[("Archivos VDP", "*.vdp")]
+        )
+        if not path: return
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            self.pdf_queue = data.get("pdf_queue", [])
+            self.video_map   = data.get("video_map", {})
             self.current_pdf_index = 0
             self._update_queue_view()
             self.cargar_pdf_actual()
-            # Mostrar tras cargar lista
             self.current_page = 0
             self.mostrar_pagina()
+            messagebox.showinfo("Éxito", "Cargado correctamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo cargar: {e}")
+
+    def agregar_video(self):
+        if not self.pdf_queue:
+            messagebox.showwarning("Error", "No hay PDF cargado."); return
+        path = filedialog.askopenfilename(
+            title="Seleccione el vídeo para este PDF",
+            filetypes=[("Vídeos", "*.mp4;*.avi;*.mov"), ("Todos", "*.*")]
+        )
+        if not path: return
+        pdf_path = self.pdf_queue[self.current_pdf_index]
+        self.video_map[pdf_path] = path
+        messagebox.showinfo("Vídeo agregado", f"Vídeo asignado a {os.path.basename(pdf_path)}")
+        if self.video_visible:
+            self._open_video_window(path)
+
+    def toggle_video(self):
+        """Muestra u oculta la ventana de vídeo fija 1920×1080."""
+        if self.video_visible:
+            if self.video_win and self.video_win.winfo_exists():
+                self.video_win.withdraw()
+            self.video_visible = False
+        else:
+            pdf = self.pdf_queue[self.current_pdf_index] if self.pdf_queue else None
+            vid = self.video_map.get(pdf) if pdf else None
+            if vid:
+                self._open_video_window(vid)
+                self.video_win.deiconify()
+                self.video_visible = True
+            else:
+                messagebox.showinfo("Sin vídeo", "No hay vídeo asignado al PDF actual.")
+
+    def _open_video_window(self, video_path):
+        # Configura ventana fija y no redimensionable
+        if not self.video_win or not self.video_win.winfo_exists():
+            self.video_win = Toplevel(self.master)
+            self.video_win.title("Vídeo asociado")
+            self.video_win.geometry("1920x1080")
+            self.video_win.resizable(False, False)
+            self.video_label = Label(self.video_win)
+            self.video_label.pack(fill="both", expand=True)
+        else:
+            self.video_win.deiconify()
+
+        # (Re)inicia captura y cola
+        if self.video_cap:
+            self.video_cap.release()
+        with self.frame_queue.mutex:
+            self.frame_queue.queue.clear()
+        self.video_cap = cv2.VideoCapture(video_path)
+        # Inicia lector en hilo separado
+        self.video_thread = threading.Thread(target=self._video_reader, daemon=True)
+        self.video_thread.start()
+        # Empieza la actualización UI
+        self._play_video_frame()
+
+    def _video_reader(self):
+        """Lee frames y mantiene siempre el más reciente en frame_queue."""
+        while self.video_visible and self.video_cap.isOpened():
+            ret, frame = self.video_cap.read()
+            if not ret:
+                self.video_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                continue
+            if not self.frame_queue.full():
+                self.frame_queue.put(frame)
+
+    def _play_video_frame(self):
+        """Toma el último frame disponible y actualiza el label."""
+        if self.video_visible:
+            try:
+                frame = self.frame_queue.get_nowait()
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # Ajustar al tamaño de la ventana de vídeo
+                vw = self.video_win.winfo_width()
+                vh = self.video_win.winfo_height()
+                # A veces aún no está bien inicializado, comprueba un tamaño mínimo
+                if vw < 10 or vh < 10:
+                    vw, vh = 1920, 1080
+                frame = cv2.resize(frame, (vw, vh), interpolation=cv2.INTER_AREA)
+                img = Image.fromarray(frame)
+                imgtk = ImageTk.PhotoImage(img)
+                self.video_label.imgtk = imgtk
+                self.video_label.config(image=imgtk)
+            except queue.Empty:
+                pass
+            # programa siguiente actualización
+            self.video_win.after(30, self._play_video_frame)
+        else:
+            # si ya no es visible, libera recursos
+            if self.video_cap:
+                self.video_cap.release()
 
     def cargar_pdf_actual(self):
         if not self.pdf_queue or self.current_pdf_index >= len(self.pdf_queue):
@@ -206,119 +305,95 @@ class PartituraApp:
         try:
             self.doc = fitz.open(path)
             self.num_pages = len(self.doc)
-            # current_page debe ser asignado antes de mostrar en el contexto de llamada
-            # No llamamos a mostrar_pagina aquí para evitar duplicados
             self.page_cache.clear()
             self._update_queue_view()
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo abrir el PDF:\n{e}")
 
-
     def pagina_anterior(self):
-        # Retrocede de dos en dos páginas o cambia de PDF si es necesario
         if self.current_page >= 2:
             self.current_page -= 2
-            self.mostrar_pagina()
         elif self.current_page == 1:
-            # Si está en la segunda página, ir a la primera
             self.current_page = 0
-            self.mostrar_pagina()
         elif self.current_pdf_index > 0:
-            # Cargar PDF anterior y posicionarse en su último par
             self.current_pdf_index -= 1
             self.cargar_pdf_actual()
-            # Calcular último par en el PDF cargado
-            if self.num_pages % 2 == 0:
-                self.current_page = self.num_pages - 2
-            else:
-                self.current_page = self.num_pages - 1
-            self.mostrar_pagina()
-        # Si está en la primera página del primer PDF, no hace nada
+            self.current_page = (self.num_pages - 2) if self.num_pages % 2 == 0 else (self.num_pages - 1)
+        self.mostrar_pagina()
 
     def pagina_siguiente(self):
-        # Si queda al menos otro par completo (dos páginas) adelante:
         if self.current_page + 2 <= self.num_pages - 1:
             self.current_page += 2
-            self.mostrar_pagina()
-        # Si el documento tiene un número impar de páginas y solo queda una al final:
         elif self.num_pages % 2 == 1 and self.current_page + 1 < self.num_pages:
             self.current_page += 1
-            self.mostrar_pagina()
-        # En cualquier otro caso (se acabó el PDF), pasa al siguiente PDF de la cola:
         elif self.current_pdf_index < len(self.pdf_queue) - 1:
             self.current_pdf_index += 1
             self.cargar_pdf_actual()
             self.current_page = 0
-            self.mostrar_pagina()
-        # Si no hay más PDFs ni páginas, no hace nada
+        self.mostrar_pagina()
 
     def mostrar_pagina(self):
-        if not self.doc:
-            return
-
-        pages_to_display = []
-        # Siempre mostrar par: página actual + siguiente (o blanco si no existe)
+        if not self.doc: return
+        pages = []
         for offset in (0, 1):
-            page_index = self.current_page + offset
-            if 0 <= page_index < self.num_pages:
-                if page_index in self.page_cache:
-                    img = self.page_cache[page_index]
+            idx = self.current_page + offset
+            if 0 <= idx < self.num_pages:
+                if idx in self.page_cache:
+                    img = self.page_cache[idx]
                 else:
-                    page = self.doc.load_page(page_index)
+                    page = self.doc.load_page(idx)
                     mat = fitz.Matrix(self.zoom, self.zoom)
                     pix = page.get_pixmap(matrix=mat)
                     arr = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
                     if pix.n == 4:
-                        arr = arr[:, :, :3]
-                    img_rgb = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
-                    img = Image.fromarray(img_rgb)
-                    self.page_cache[page_index] = img
+                        arr = arr[..., :3]
+                    img = Image.fromarray(cv2.cvtColor(arr, cv2.COLOR_BGR2RGB))
+                    self.page_cache[idx] = img
             else:
-                # Página en blanco para pares impares
-                img = Image.new("RGB", (800, 1000), color=(211, 211, 211))
-            pages_to_display.append(img)
+                img = Image.new("RGB", (800,1000), color=(211,211,211))
+            pages.append(img)
 
-        # Combinar páginas lado a lado
-        widths, heights = zip(*(img.size for img in pages_to_display))
-        combined = Image.new("RGB", (sum(widths), max(heights)), color=(255, 255, 255))
+        widths, heights = zip(*(i.size for i in pages))
+        combined = Image.new("RGB", (sum(widths), max(heights)), "white")
         x = 0
-        for img in pages_to_display:
-            combined.paste(img, (x, 0))
-            x += img.width
+        for i in pages:
+            combined.paste(i, (x,0))
+            x += i.width
 
-        # Ajustar al canvas
         w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
-        img_resized = combined.resize((w, h), Image.LANCZOS)
+        img_resized = combined.resize((w,h), Image.LANCZOS)
         self.tk_img = ImageTk.PhotoImage(img_resized)
         self.canvas.delete("all")
-        self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
+        self.canvas.create_image(0,0,anchor="nw",image=self.tk_img)
         self._update_title()
+
+        # si el vídeo está visible, recarga su fuente
+        if self.video_visible:
+            pdf = self.pdf_queue[self.current_pdf_index]
+            vid = self.video_map.get(pdf)
+            if vid:
+                self._open_video_window(vid)
 
     def verificar_midi(self):
         if midi_input.poll():
             events = midi_input.read(10)
-            for event in events:
-                status, cc_number, value, _ = event[0]
-                if status == 176 and cc_number == MIDI_PEDAL_CC and value >= THRESHOLD:
+            for e in events:
+                status, cc, val, _ = e[0]
+                if status == 176 and cc == MIDI_PEDAL_CC and val >= THRESHOLD:
                     self.pagina_siguiente()
         self.master.after(100, self.verificar_midi)
 
     def cambiar_pedal(self):
-        nuevo_cc = detectar_cc()
-        if nuevo_cc is not None:
+        nuevo = detectar_cc()
+        if nuevo is not None:
             global MIDI_PEDAL_CC
-            MIDI_PEDAL_CC = nuevo_cc
+            MIDI_PEDAL_CC = nuevo
 
     def eliminar_pdf(self):
         if not self.pdf_queue:
-            messagebox.showwarning("Error", "La cola está vacía.")
-            return
-
-        # Elimina el PDF actual
+            messagebox.showwarning("Error", "La cola está vacía."); return
         eliminado = self.pdf_queue.pop(self.current_pdf_index)
-        messagebox.showinfo("PDF eliminado", f"{eliminado} ha sido removido de la cola.")
-
-        # Si tras la eliminación ya no hay PDFs:
+        messagebox.showinfo("PDF eliminado", f"{os.path.basename(eliminado)} removido.")
         if not self.pdf_queue:
             self.doc = None
             self.current_page = 0
@@ -328,31 +403,22 @@ class PartituraApp:
             self._update_queue_view()
             self._update_title()
             return
-
-        # Ajusta el índice actual si estaba al final
         if self.current_pdf_index >= len(self.pdf_queue):
-            self.current_pdf_index = len(self.pdf_queue) - 1
-
-        # Recarga el nuevo PDF activo y muestra su primera página
+            self.current_pdf_index = len(self.pdf_queue)-1
         self.cargar_pdf_actual()
         self.current_page = 0
         self.mostrar_pagina()
 
-
     def cerrar_aplicacion(self):
-        try:
-            midi_input.close()
-        except Exception:
-            pass
-        try:
-            pygame.midi.quit()
-        except Exception:
-            pass
+        try: midi_input.close()
+        except: pass
+        try: pygame.midi.quit()
+        except: pass
+        if self.video_cap:
+            self.video_cap.release()
         self.master.destroy()
 
-# === INICIAR APP ===
 if __name__ == "__main__":
     root = Tk()
     app = PartituraApp(root)
     root.mainloop()
-
