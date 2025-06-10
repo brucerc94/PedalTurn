@@ -332,8 +332,10 @@ class PartituraApp:
 
     def verificar_midi(self):
         if midi_input.poll():
-            for status, cc, val, _ in midi_input.read(10):
-                if status == 176 and cc == MIDI_PEDAL_CC and val >= THRESHOLD:
+            events = midi_input.read(10)
+            for event in events:
+                status, cc_number, value, _ = event[0]
+                if status == 176 and cc_number == MIDI_PEDAL_CC and value >= THRESHOLD:
                     self.pagina_siguiente()
         self.master.after(100, self.verificar_midi)
 
