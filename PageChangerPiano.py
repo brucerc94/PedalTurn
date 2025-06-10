@@ -2,6 +2,7 @@ import fitz  # PyMuPDF
 import cv2
 import pygame
 import pygame.midi
+from pygame._sdl2 import Window
 import numpy as np
 import json
 import os
@@ -201,6 +202,16 @@ class PartituraApp:
         path = self.video_map.get(self.pdf_queue[self.current_pdf_index])
         if not path:
             return messagebox.showinfo("Sin video", "No asignado")
+
+        # Si ya tenemos una posición guardada, la aplicamos
+        if hasattr(self, 'video_pos') and self.video_pos:
+            x, y = self.video_pos
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f"{x},{y}"
+        else:
+            # opcional: centra la ventana la primera vez
+            os.environ['SDL_VIDEO_CENTERED'] = '1'
+
+        
         self.video_visible = True
         self.stop_event.clear()
         self.cap = cv2.VideoCapture(path)
@@ -209,6 +220,12 @@ class PartituraApp:
         pygame.display.set_caption("Vídeo")
         self.video_thread = threading.Thread(target=self._video_loop, args=(screen,), daemon=True)
         self.video_thread.start()
+
+        # 👉 fuerza a que la ventana de partituras quede por encima
+        self.master.lift()
+        self.master.attributes('-topmost', True)
+        # opcional: desactivar “topmost” si no quieres que siempre esté por encima
+        self.master.after(100, lambda: self.master.attributes('-topmost', False))
 
     def _video_loop(self, screen):
         clock = pygame.time.Clock()
@@ -235,6 +252,8 @@ class PartituraApp:
     def _stop_video(self):
         # Señalizar al hilo que debe detenerse
         if self.video_visible:
+            win = Window.from_display_module()
+            self.video_pos = win.position  
             self.video_visible = False
             self.stop_event.set()
         # Esperar a que el hilo termine completamente
