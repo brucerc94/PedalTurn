@@ -1,17 +1,19 @@
-import fitz  # PyMuPDF
-import cv2
-import pygame
-import pygame.midi
-from pygame._sdl2 import Window
-import numpy as np
-import json
 import os
+import json
 import threading
-from tkinter import (
+
+import fitz                    # PyMuPDF: renderizado de PDF
+import cv2                     # conversión a/desde arrays NumPy
+import numpy as np             # manejo de arrays de imagen
+import pygame                  # interfaz de vídeo
+import pygame.midi             # entrada MIDI
+from pygame._sdl2 import Window  # para recuperar posición de la ventana de vídeo
+
+from tkinter import (          # UI principal
     Tk, Button, Label, Canvas, Listbox, Scrollbar,
     filedialog, simpledialog, messagebox, VERTICAL, END, Frame
 )
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk  # manipulación y despliegue de imágenes
 
 # === CONFIGURACIÓN GENERAL ===
 THRESHOLD = 64
@@ -126,7 +128,7 @@ class PartituraApp:
         self.lst.config(yscrollcommand=sb.set)
         self.lst.bind("<<ListboxSelect>>", self.on_select)
 
-        self.canvas = Canvas(self.master, width=800, height=600)
+        self.canvas = Canvas(self.master, width=800, height=600, bg="black")
         self.canvas.pack(fill="both", expand=True)
 
     def _update_title(self):
@@ -319,7 +321,7 @@ class PartituraApp:
                 imgs.append(Image.new("RGB", (800, 1000), (211, 211, 211)))
         total_w = sum(im.width for im in imgs)
         max_h = max(im.height for im in imgs)
-        combo = Image.new("RGB", (total_w, max_h), "white")
+        combo = Image.new("RGB", (total_w, max_h), "black")
         x = 0
         for im in imgs:
             combo.paste(im, (x, 0))
@@ -368,5 +370,11 @@ class PartituraApp:
 
 if __name__ == "__main__":
     root = Tk()
+    root.configure(bg="black")
     PartituraApp(root)
     root.mainloop()
+
+
+
+
+    
