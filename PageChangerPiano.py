@@ -37,20 +37,56 @@ def seleccionar_midi_input():
     if not dispositivos:
         messagebox.showerror("Sin dispositivos", "No se encontraron dispositivos MIDI de entrada.")
         return None
-    opciones = "\n".join([f"{i}: {nombre}" for i, nombre in dispositivos])
-    return simpledialog.askinteger(
-        "Seleccionar MIDI",
-        f"Seleccione el ID del dispositivo MIDI:\n\n{opciones}",
-        minvalue=0, maxvalue=999
-    )
+    
+    # Crear ventana de selección más amigable
+    select_window = Tk()
+    select_window.title("Seleccionar Dispositivo MIDI")
+    select_window.geometry("400x300")
+    select_window.configure(bg="#f0f0f0")
+    select_window.attributes("-topmost", True)
+    # No usar grab_set() para evitar conflictos con otras ventanas modales
+    
+    Label(select_window, text="Seleccione el dispositivo MIDI de entrada:", 
+          font=("Segoe UI", 12, "bold"), bg="#f0f0f0", fg="#2c3e50").pack(pady=20)
+    
+    # Lista de dispositivos
+    listbox = Listbox(select_window, font=("Segoe UI", 10), bg="white", fg="#2c3e50",
+                      selectbackground="#3498db", selectforeground="white", height=8)
+    listbox.pack(fill="both", expand=True, padx=20, pady=10)
+    
+    # Llenar lista
+    for i, nombre in dispositivos:
+        listbox.insert(END, f"{i}: {nombre}")
+    
+    selected_device = [None]  # Usar lista para poder modificar desde lambda
+    
+    def on_select():
+        sel = listbox.curselection()
+        if sel:
+            idx = sel[0]
+            device_id = dispositivos[idx][0]
+            selected_device[0] = device_id
+            select_window.destroy()
+    
+    def on_cancel():
+        select_window.destroy()
+    
+    # Botones
+    button_frame = Frame(select_window, bg="#f0f0f0")
+    button_frame.pack(pady=20)
+    
+    Button(button_frame, text="Seleccionar", command=on_select,
+           bg="#27ae60", fg="white", relief="flat", padx=20, pady=5).pack(side="left", padx=5)
+    Button(button_frame, text="Cancelar", command=on_cancel,
+           bg="#e74c3c", fg="white", relief="flat", padx=20, pady=5).pack(side="left", padx=5)
+    
+    select_window.wait_window()
+    return selected_device[0]
 
 # === INICIALIZACIÓN MIDI ===
 pygame.midi.init()
-input_id = seleccionar_midi_input()
-if input_id is None:
-    pygame.midi.quit()
-    exit()
-midi_input = pygame.midi.Input(input_id)
+midi_input = None
+MIDI_INPUT_ID = None
 
 # === DETECCIÓN DE PEDAL DINÁMICA ===
 def detectar_cc():
@@ -299,29 +335,37 @@ class PartituraApp:
 
     def mostrar_configuracion(self):
         """Muestra ventana de configuración"""
-        config_window = Tk()
-        config_window.title("Configuración")
-        config_window.geometry("500x400")
-        config_window.configure(bg="#f0f0f0")
-        config_window.attributes("-topmost", True)
+        self.config_window = Tk()
+        self.config_window.title("Configuración")
+        self.config_window.geometry("600x500")
+        self.config_window.configure(bg="#f0f0f0")
+        self.config_window.attributes("-topmost", True)
         
         # Centrar ventana
-        config_window.grab_set()
+        self.config_window.grab_set()
         
-        Label(config_window, text="Configuración de la Aplicación", 
-              font=("Segoe UI", 14, "bold"), bg="#f0f0f0", fg="#2c3e50").pack(pady=20)
+        Label(self.config_window, text="Configuración de la Aplicación", 
+              font=("Segoe UI", 16, "bold"), bg="#f0f0f0", fg="#2c3e50").pack(pady=15)
         
         # Opciones de configuración
-        options_frame = Frame(config_window, bg="#f0f0f0")
-        options_frame.pack(fill="both", expand=True, padx=20)
+        options_frame = Frame(self.config_window, bg="#f0f0f0")
+        options_frame.pack(fill="both", expand=True, padx=25)
         
-        # Configuración de resolución de video
-        Label(options_frame, text="Resolución del Video:", 
-              font=("Segoe UI", 12, "bold"), bg="#f0f0f0", fg="#2c3e50").pack(anchor="w", pady=(0, 10))
+        # Frame para organizar en dos columnas
+        content_frame = Frame(options_frame, bg="#f0f0f0")
+        content_frame.pack(fill="both", expand=True)
         
-        # Frame para botones de resolución
-        res_frame = Frame(options_frame, bg="#f0f0f0")
-        res_frame.pack(fill="x", pady=(0, 20))
+        # Columna izquierda - Resolución de video
+        left_frame = Frame(content_frame, bg="#f0f0f0")
+        left_frame.pack(side="left", fill="both", expand=True, padx=(0, 15))
+        
+        Label(left_frame, text="🎬 Resolución del Video", 
+              font=("Segoe UI", 12, "bold"), bg="#f0f0f0", fg="#2c3e50").pack(anchor="w", pady=(0, 8))
+        
+        # Resolución actual (guardar referencia para actualizar)
+        self.current_res_label = Label(left_frame, text=f"Actual: {VIDEO_WIDTH}x{VIDEO_HEIGHT}", 
+                                      font=("Segoe UI", 9), bg="#f0f0f0", fg="#7f8c8d")
+        self.current_res_label.pack(anchor="w", pady=(0, 10))
         
         # Botones de resolución predefinidas
         resolutions = [
@@ -332,36 +376,99 @@ class PartituraApp:
         ]
         
         for i, (text, width, height) in enumerate(resolutions):
-            btn = Button(res_frame, text=text, 
+            btn = Button(left_frame, text=text, 
                         command=lambda w=width, h=height: self.cambiar_resolucion_video(w, h),
-                        bg="#3498db", fg="white", relief="flat", padx=15, pady=5)
-            btn.pack(fill="x", pady=2)
+                        bg="#3498db", fg="white", relief="flat", padx=12, pady=4, font=("Segoe UI", 9))
+            btn.pack(fill="x", pady=1)
         
-        # Resolución actual
-        current_res = f"Resolución actual: {VIDEO_WIDTH}x{VIDEO_HEIGHT}"
-        Label(options_frame, text=current_res, 
-              font=("Segoe UI", 10), bg="#f0f0f0", fg="#7f8c8d").pack(pady=10)
+        # Columna derecha - Pedal MIDI
+        right_frame = Frame(content_frame, bg="#f0f0f0")
+        right_frame.pack(side="right", fill="both", expand=True, padx=(15, 0))
         
-        # Separador
-        separator = Frame(options_frame, height=2, bg="#bdc3c7")
-        separator.pack(fill="x", pady=20)
+        Label(right_frame, text="🎹 Pedal MIDI", 
+              font=("Segoe UI", 12, "bold"), bg="#f0f0f0", fg="#2c3e50").pack(anchor="w", pady=(0, 8))
         
-        # Configuración del pedal MIDI
-        Label(options_frame, text="Configuración del Pedal MIDI:", 
-              font=("Segoe UI", 12, "bold"), bg="#f0f0f0", fg="#2c3e50").pack(anchor="w", pady=(0, 10))
-        
-        # Información del pedal actual
-        pedal_info = f"Pedal actual: CC #{MIDI_PEDAL_CC if MIDI_PEDAL_CC else 'No configurado'}"
-        Label(options_frame, text=pedal_info, 
-              font=("Segoe UI", 10), bg="#f0f0f0", fg="#7f8c8d").pack(pady=(0, 10))
+        # Información del pedal actual (guardar referencia para actualizar)
+        self.pedal_info_label = Label(right_frame, text=f"Pedal actual: CC #{MIDI_PEDAL_CC if MIDI_PEDAL_CC else 'No configurado'}", 
+                                     font=("Segoe UI", 9), bg="#f0f0f0", fg="#7f8c8d")
+        self.pedal_info_label.pack(anchor="w", pady=(0, 10))
         
         # Botón para cambiar pedal
-        Button(options_frame, text="🎹 Cambiar Pedal MIDI", 
+        Button(right_frame, text="Cambiar Pedal MIDI", 
                command=self.cambiar_pedal,
-               bg="#34495e", fg="white", relief="flat", padx=15, pady=8).pack(fill="x", pady=5)
+               bg="#34495e", fg="white", relief="flat", padx=15, pady=8, font=("Segoe UI", 10, "bold")).pack(fill="x", pady=5)
         
-        Button(config_window, text="Cerrar", command=config_window.destroy,
-               bg="#e74c3c", fg="white", relief="flat", padx=20, pady=5).pack(pady=20)
+        # Separador
+        separator2 = Frame(right_frame, height=2, bg="#bdc3c7")
+        separator2.pack(fill="x", pady=15)
+        
+        # Información del dispositivo MIDI actual
+        device_name = "No configurado"
+        if MIDI_INPUT_ID is not None:
+            try:
+                device_info = pygame.midi.get_device_info(MIDI_INPUT_ID)
+                if device_info:
+                    device_name = device_info[1].decode()
+            except:
+                device_name = f"ID #{MIDI_INPUT_ID}"
+        
+        self.device_info_label = Label(right_frame, text=f"Dispositivo: {device_name}", 
+                                      font=("Segoe UI", 9), bg="#f0f0f0", fg="#7f8c8d")
+        self.device_info_label.pack(anchor="w", pady=(0, 10))
+        
+        # Botón para cambiar dispositivo MIDI
+        Button(right_frame, text="Cambiar Dispositivo MIDI", 
+               command=self.cambiar_dispositivo_midi,
+               bg="#e67e22", fg="white", relief="flat", padx=15, pady=8, font=("Segoe UI", 10, "bold")).pack(fill="x", pady=5)
+        
+        # Información adicional
+        info_text = "• Los cambios se guardan automáticamente\n• La resolución se aplica al próximo video\n• El pedal se detecta al presionarlo\n• El dispositivo MIDI se selecciona cada vez"
+        Label(right_frame, text=info_text, 
+              font=("Segoe UI", 8), bg="#f0f0f0", fg="#95a5a6", justify="left").pack(anchor="w", pady=(15, 0))
+        
+        # Separador antes del crédito
+        separator3 = Frame(self.config_window, height=2, bg="#bdc3c7")
+        separator3.pack(fill="x", pady=15)
+        
+        # Crédito del desarrollador
+        credit_frame = Frame(self.config_window, bg="#f0f0f0")
+        credit_frame.pack(fill="x", pady=10)
+        
+        Label(credit_frame, text="Desarrollado por:", 
+              font=("Segoe UI", 9), bg="#f0f0f0", fg="#7f8c8d").pack()
+        Label(credit_frame, text="Bruno Rivas Centty", 
+              font=("Segoe UI", 12, "bold"), bg="#f0f0f0", fg="#2c3e50").pack()
+        
+        # Versión de la aplicación
+        version_frame = Frame(self.config_window, bg="#f0f0f0")
+        version_frame.pack(fill="x", pady=5)
+        
+        Label(version_frame, text="Versión 1.0", 
+              font=("Segoe UI", 10), bg="#f0f0f0", fg="#95a5a6").pack()
+        
+        # Botón cerrar centrado
+        Button(self.config_window, text="Cerrar", command=self.config_window.destroy,
+               bg="#e74c3c", fg="white", relief="flat", padx=25, pady=8, font=("Segoe UI", 10, "bold")).pack(pady=20)
+    
+    def actualizar_ventana_configuracion(self):
+        """Actualiza la información mostrada en la ventana de configuración"""
+        if hasattr(self, 'current_res_label') and hasattr(self, 'pedal_info_label'):
+            # Actualizar resolución actual
+            self.current_res_label.config(text=f"Actual: {VIDEO_WIDTH}x{VIDEO_HEIGHT}")
+            # Actualizar información del pedal
+            self.pedal_info_label.config(text=f"Pedal actual: CC #{MIDI_PEDAL_CC if MIDI_PEDAL_CC else 'No configurado'}")
+            
+        if hasattr(self, 'device_info_label'):
+            # Actualizar información del dispositivo MIDI
+            device_name = "No configurado"
+            if MIDI_INPUT_ID is not None:
+                try:
+                    device_info = pygame.midi.get_device_info(MIDI_INPUT_ID)
+                    if device_info:
+                        device_name = device_info[1].decode()
+                except:
+                    device_name = f"ID #{MIDI_INPUT_ID}"
+            self.device_info_label.config(text=f"Dispositivo: {device_name}")
     
     def cargar_configuraciones(self):
         """Carga las configuraciones guardadas"""
@@ -397,6 +504,9 @@ class PartituraApp:
         self.status_var.set(f"Resolución del video cambiada a {width}x{height}")
         # Guardar configuración automáticamente
         self.guardar_configuraciones()
+        # Actualizar la ventana de configuración si está abierta
+        if hasattr(self, 'config_window') and self.config_window.winfo_exists():
+            self.actualizar_ventana_configuracion()
         messagebox.showinfo("Resolución Cambiada", 
                           f"La resolución del video se ha cambiado a {width}x{height}.\n"
                           "Los cambios se han guardado automáticamente.")
@@ -628,12 +738,13 @@ class PartituraApp:
             self.page_info_var.set(f"Páginas: {self.num_pages} | Página actual: {self.current_page + 1}")
 
     def verificar_midi(self):
-        if midi_input.poll():
-            events = midi_input.read(10)
-            for event in events:
-                status, cc_number, value, _ = event[0]
-                if status == 176 and cc_number == MIDI_PEDAL_CC and value >= THRESHOLD:
-                    self.pagina_siguiente()
+        if midi_input and MIDI_PEDAL_CC:
+            if midi_input.poll():
+                events = midi_input.read(10)
+                for event in events:
+                    status, cc_number, value, _ = event[0]
+                    if status == 176 and cc_number == MIDI_PEDAL_CC and value >= THRESHOLD:
+                        self.pagina_siguiente()
         self.master.after(100, self.verificar_midi)
 
     def cambiar_pedal(self):
@@ -643,6 +754,34 @@ class PartituraApp:
             self.status_var.set(f"Pedal MIDI configurado: CC #{cc}")
             # Guardar configuración automáticamente
             self.guardar_configuraciones()
+            # Actualizar la ventana de configuración si está abierta
+            if hasattr(self, 'config_window') and self.config_window.winfo_exists():
+                self.actualizar_ventana_configuracion()
+    
+    def cambiar_dispositivo_midi(self):
+        """Cambia el dispositivo MIDI de entrada"""
+        global midi_input, MIDI_INPUT_ID
+        
+        # Cerrar dispositivo actual si existe
+        if midi_input:
+            midi_input.close()
+            midi_input = None
+        
+        # Seleccionar nuevo dispositivo
+        new_device_id = seleccionar_midi_input()
+        if new_device_id is not None:
+            try:
+                midi_input = pygame.midi.Input(new_device_id)
+                MIDI_INPUT_ID = new_device_id
+                self.status_var.set(f"Dispositivo MIDI cambiado a ID #{new_device_id}")
+                # Actualizar la ventana de configuración si está abierta
+                if hasattr(self, 'config_window') and self.config_window.winfo_exists():
+                    self.actualizar_ventana_configuracion()
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al conectar al dispositivo MIDI: {e}")
+                self.status_var.set("Error al conectar dispositivo MIDI")
+        else:
+            self.status_var.set("No se seleccionó dispositivo MIDI")
 
     def eliminar_pdf(self):
         if not self.pdf_queue:
@@ -668,7 +807,8 @@ class PartituraApp:
 
     def cerrar_aplicacion(self):
         self._stop_video()
-        midi_input.close()
+        if midi_input:
+            midi_input.close()
         pygame.midi.quit()
         pygame.quit()
         self.master.destroy()
