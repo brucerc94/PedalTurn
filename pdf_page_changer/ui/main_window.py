@@ -77,7 +77,9 @@ class MainWindow(QMainWindow):
         for key, slot in shortcuts:
             action = QAction(self)
             action.setShortcut(QKeySequence(key))
-            action.triggered.connect(lambda _checked=False, callback=slot: callback())
+            action.triggered.connect(
+                lambda _checked=False, callback=slot: callback()
+            )
             self.addAction(action)
 
     def resizeEvent(self, event) -> None:
@@ -87,21 +89,40 @@ class MainWindow(QMainWindow):
     def _position_controls(self) -> None:
         margin = 18
         size = self.controls.sizeHint()
-        width = min(size.width(), max(260, self.centralWidget().width() - margin * 2))
-        self.controls.setGeometry(margin, margin, width, size.height())
+        width = min(
+            size.width(),
+            max(260, self.centralWidget().width() - margin * 2),
+        )
+        self.controls.setGeometry(
+            margin,
+            margin,
+            width,
+            size.height(),
+        )
 
     def set_playlist(self, items: list[ScoreItem], current_index: int) -> None:
         self.controls.set_playlist(items, current_index)
 
-    def set_score_info(self, item: ScoreItem | None, current_page: int, page_count: int) -> None:
+    def set_score_info(
+        self,
+        item: ScoreItem | None,
+        current_page: int,
+        page_count: int,
+    ) -> None:
         if item is None:
             self.controls.set_page_info("")
             return
+
         if page_count:
             end_page = min(current_page + 2, page_count)
-            self.controls.set_page_info(f"{item.display_name}  ·  {current_page + 1}–{end_page}/{page_count}")
+            self.controls.set_page_info(
+                f"{item.display_name}  ·  "
+                f"{current_page + 1}–{end_page}/{page_count}"
+            )
         else:
-            self.controls.set_page_info(f"{item.display_name}  ·  PDF no disponible")
+            self.controls.set_page_info(
+                f"{item.display_name}  ·  PDF unavailable"
+            )
 
     def set_status(self, text: str) -> None:
         self.controls.set_status(text)
@@ -110,34 +131,34 @@ class MainWindow(QMainWindow):
     def open_pdf_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Seleccionar partitura",
+            "Select Score",
             "",
-            "Partituras PDF (*.pdf)",
+            "PDF Scores (*.pdf)",
         )
         return Path(path) if path else None
 
     def save_project_dialog(self) -> Path | None:
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Guardar lista",
+            "Save Playlist",
             "",
-            "Proyecto VDP (*.vdp)",
+            "VDP Project (*.vdp)",
         )
         return Path(path) if path else None
 
     def load_project_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Cargar lista",
+            "Load Playlist",
             "",
-            "Proyecto VDP (*.vdp)",
+            "VDP Project (*.vdp)",
         )
         return Path(path) if path else None
 
     def choose_video_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Seleccionar video",
+            "Select Video",
             "",
             "Videos (*.mp4 *.avi *.mov *.mkv *.webm)",
         )
