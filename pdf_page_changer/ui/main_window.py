@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(self._section_label("COLA DE PARTITURAS"))
 
         self.playlist = QListWidget()
-        self.playlist.currentRowChanged.connect(self.pdf_selected.emit)
+        self.playlist.currentRowChanged.connect(lambda index: self.pdf_selected.emit(index))
         sidebar_layout.addWidget(self.playlist, 1)
 
         viewer = QWidget()
