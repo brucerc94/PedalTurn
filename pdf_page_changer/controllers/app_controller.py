@@ -71,9 +71,11 @@ class AppController:
                 opened = self._midi_service.open(device.device_id)
                 self._config.midi_device_name = opened.name
                 self._config_service.save(self._config)
-                self._window.set_status(f"MIDI listo: {opened.name}")
+                self._window.set_status(f"MIDI ready: {opened.name}")
             else:
-                self._window.set_status("Conecta un dispositivo MIDI y selecciónalo en Configuración.")
+                self._window.set_status(
+                    "Connect a MIDI device and select it in Settings."
+                )
         except RuntimeError as exc:
             self._window.set_status(str(exc))
         self._midi_timer.start()
@@ -84,7 +86,7 @@ class AppController:
             return
         resolved = path.resolve()
         if any(item.pdf_path.resolve() == resolved for item in self._state.items):
-            self._window.set_status("Ese PDF ya está en la cola.")
+            self._window.set_status("That PDF is already in the playlist.")
             return
         self._state.items.append(ScoreItem(resolved))
         if len(self._state.items) == 1:
@@ -94,8 +96,13 @@ class AppController:
 
     def save_project(self) -> None:
         if not self._state.items:
-            QMessageBox.information(self._window, "Sin partituras", "No hay PDFs en la cola para guardar.")
+            QMessageBox.information(
+                self._window,
+                "No Scores",
+                "There are no PDFs in the playlist to save.",
+            )
             return
+
         path = self._window.save_project_dialog()
         if path is None:
             return
@@ -106,7 +113,7 @@ class AppController:
         except ProjectFileError as exc:
             QMessageBox.critical(self._window, "Error", str(exc))
             return
-        self._window.set_status(f"Lista guardada: {path.name}")
+        self._window.set_status(f"Playlist saved: {path.name}")
 
     def load_project(self) -> None:
         path = self._window.load_project_dialog()
@@ -120,7 +127,7 @@ class AppController:
         self._stop_video()
         self._state.set_items(items)
         self._open_current_pdf()
-        self._window.set_status(f"Lista cargada: {len(items)} partituras.")
+        self._window.set_status(f"Playlist loaded: {len(items)} scores.")
 
     def remove_pdf(self) -> None:
         item = self._state.current_item
@@ -130,7 +137,7 @@ class AppController:
         removed = item.display_name
         self._state.remove_current_item()
         self._open_current_pdf() if self._state.current_item else self._clear_current_pdf()
-        self._window.set_status(f"PDF eliminado: {removed}")
+        self._window.set_status(f"PDF removed: {removed}")
 
     def select_pdf(self, index: int) -> None:
         if not 0 <= index < len(self._state.items) or index == self._state.current_index:
@@ -140,25 +147,35 @@ class AppController:
     def add_video(self) -> None:
         item = self._state.current_item
         if item is None:
-            QMessageBox.information(self._window, "Sin partitura", "Primero agrega un PDF.")
+            QMessageBox.information(
+                self._window,
+                "No Score",
+                "Add a PDF score first.",
+            )
             return
         path = self._window.choose_video_dialog()
         if path is None:
             return
         self._state.replace_current_item(ScoreItem(item.pdf_path, path.resolve()))
-        self._window.set_status(f"Video asignado: {path.name}")
+        self._window.set_status(f"Video assigned: {path.name}")
 
     def toggle_video(self) -> None:
         if self._video_window.isVisible():
             self._stop_video()
             return
+
         item = self._state.current_item
         if item is None or item.video_path is None:
-            QMessageBox.information(self._window, "Sin video", "No hay un video asignado a esta partitura.")
+            QMessageBox.information(
+                self._window,
+                "No Video",
+                "No video is assigned to this score.",
+            )
             return
+
         try:
             if not item.video_path.exists():
-                raise FileNotFoundError(f"No existe el video: {item.video_path}")
+                raise FileNotFoundError(f"Video not found: {item.video_path}")
             self._video_window.resize(self._config.video_width, self._config.video_height)
             self._restore_video_position()
             self._video_window.show()
@@ -167,13 +184,15 @@ class AppController:
             self._video_window.hide()
             QMessageBox.critical(self._window, "Video", str(exc))
             return
-        self._window.set_status("Video iniciado.")
+
+        self._window.set_status("Video started.")
 
     def show_settings(self) -> None:
         if self._settings_dialog is not None:
             self._settings_dialog.raise_()
             self._settings_dialog.activateWindow()
             return
+
         dialog = SettingsDialog(
             self._config.video_width,
             self._config.video_height,
@@ -192,37 +211,55 @@ class AppController:
         self._config.video_width = width
         self._config.video_height = height
         self._config_service.save(self._config)
-        self._window.set_status(f"Tamaño de ventana de video: {width} × {height}")
+        self._window.set_status(f"Video window size: {width} × {height}")
 
     def change_midi_device(self) -> None:
         devices = self._midi_service.list_input_devices()
         if not devices:
-            QMessageBox.information(self._settings_dialog or self._window, "MIDI", "No se encontraron dispositivos MIDI de entrada.")
+            QMessageBox.information(
+                self._settings_dialog or self._window,
+                "MIDI",
+                "No MIDI input devices were found.",
+            )
             return
+
         dialog = MidiDeviceDialog(devices, self._settings_dialog or self._window)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
+
         device_id = dialog.selected_device_id
         if device_id is None:
             return
+
         try:
             device = self._midi_service.open(device_id)
         except RuntimeError as exc:
-            QMessageBox.critical(self._settings_dialog or self._window, "MIDI", str(exc))
+            QMessageBox.critical(
+                self._settings_dialog or self._window,
+                "MIDI",
+                str(exc),
+            )
             return
+
         self._last_midi_values.clear()
         self._config.midi_device_name = device.name
         self._config_service.save(self._config)
+
         if self._settings_dialog:
             self._settings_dialog.update_device(device.name)
-        self._window.set_status(f"MIDI seleccionado: {device.name}")
+        self._window.set_status(f"MIDI device selected: {device.name}")
 
     def capture_pedal(self) -> None:
         if self._capture_dialog is not None:
             return
         if self._midi_service.device_id is None:
-            QMessageBox.information(self._settings_dialog or self._window, "MIDI", "Primero selecciona un dispositivo MIDI.")
+            QMessageBox.information(
+                self._settings_dialog or self._window,
+                "MIDI",
+                "Select a MIDI device first.",
+            )
             return
+
         self._midi_service.clear_pending()
         self._last_midi_values.clear()
         dialog = MidiCaptureDialog(self._settings_dialog or self._window)
@@ -232,7 +269,10 @@ class AppController:
 
     def next_page(self) -> None:
         page_count = self._pdf_service.page_count
-        new_page = self._navigator.next_within_document(self._state.current_page, page_count)
+        new_page = self._navigator.next_within_document(
+            self._state.current_page,
+            page_count,
+        )
         if new_page is not None:
             self._state.current_page = new_page
             self._render_current_spread()
@@ -240,7 +280,7 @@ class AppController:
         if self._state.current_index + 1 < len(self._state.items):
             self._switch_pdf(self._state.current_index + 1, 0)
             return
-        self._window.set_status("Ya estás al final de la cola.")
+        self._window.set_status("Already at the end of the playlist.")
 
     def previous_page(self) -> None:
         new_page = self._navigator.previous_within_document(self._state.current_page)
@@ -249,7 +289,7 @@ class AppController:
             self._render_current_spread()
             return
         if self._state.current_index == 0:
-            self._window.set_status("Ya estás al inicio de la cola.")
+            self._window.set_status("Already at the beginning of the playlist.")
             return
         self._switch_pdf(self._state.current_index - 1, None)
 
@@ -286,12 +326,14 @@ class AppController:
         if item is None:
             self._clear_current_pdf()
             return False
+
         if not item.pdf_path.exists():
             self._pdf_service.close()
             self._window.score_viewer.clear()
-            self._window.set_status(f"PDF no encontrado: {item.pdf_path}")
+            self._window.set_status(f"PDF not found: {item.pdf_path}")
             self._sync_ui()
             return False
+
         try:
             self._pdf_service.open(item.pdf_path)
         except PdfServiceError as exc:
@@ -300,6 +342,7 @@ class AppController:
             QMessageBox.critical(self._window, "PDF", str(exc))
             self._sync_ui()
             return False
+
         if render:
             self._render_current_spread()
         return True
@@ -318,7 +361,11 @@ class AppController:
 
     def _sync_ui(self) -> None:
         self._window.set_playlist(self._state.items, self._state.current_index)
-        self._window.set_score_info(self._state.current_item, self._state.current_page, self._pdf_service.page_count)
+        self._window.set_score_info(
+            self._state.current_item,
+            self._state.current_page,
+            self._pdf_service.page_count,
+        )
 
     def _poll_midi(self) -> None:
         for event in self._midi_service.poll():
@@ -344,7 +391,11 @@ class AppController:
         self._last_midi_values[event.controller] = event.value
         if self._config.midi_pedal_cc is None:
             return
-        if event.controller == self._config.midi_pedal_cc and event.value >= self.MIDI_THRESHOLD and previous < self.MIDI_THRESHOLD:
+        if (
+            event.controller == self._config.midi_pedal_cc
+            and event.value >= self.MIDI_THRESHOLD
+            and previous < self.MIDI_THRESHOLD
+        ):
             self.next_page()
 
     def _stop_video(self) -> None:
@@ -361,7 +412,7 @@ class AppController:
         self._config.video_y = position.y()
         self._config_service.save(self._config)
         self._media_service.stop()
-        self._window.set_status("Video detenido.")
+        self._window.set_status("Video stopped.")
 
     def _restore_video_position(self) -> None:
         if self._config.video_x is not None and self._config.video_y is not None:
@@ -382,10 +433,6 @@ class AppController:
         if self._shutting_down:
             return
         self._shutting_down = True
-        if self._settings_dialog:
-            self._settings_dialog.close()
-        if self._capture_dialog:
-            self._capture_dialog.close()
         self._midi_timer.stop()
         self._stop_video()
         self._pdf_service.close()
