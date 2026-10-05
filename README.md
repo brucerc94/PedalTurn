@@ -213,13 +213,13 @@ PedalTurn/
 │   ├── ui/             # Qt windows, dialogs, viewer and styling
 │   ├── utils/          # Application paths
 │   └── main.py         # Application entry point
-├── PageChangerPiano.py
-├── requirements.txt
-├── build.bat
-├── run.bat
-├── config.json
-├── icono.ico
-└── README.md
+├── PageChangerPiano.py # Application launcher
+├── requirements.txt    # Python dependencies
+├── docs/               # README screenshots
+│   ├── Screenshot1.jpg
+│   └── Screenshot2.jpg
+├── icono.ico           # Application icon
+└── README.md           # Project documentation
 ```
 
 ## Technology
