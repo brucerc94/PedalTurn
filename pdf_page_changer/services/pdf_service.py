@@ -39,15 +39,15 @@ class PdfService:
         try:
             document = pymupdf.open(path)
         except Exception as exc:
-            raise PdfServiceError(f"No se pudo abrir el PDF: {path}") from exc
+            raise PdfServiceError(f"Could not open PDF: {path}") from exc
 
         if document.needs_pass:
             document.close()
-            raise PdfServiceError("El PDF está protegido con contraseña.")
+            raise PdfServiceError("The PDF is password-protected.")
 
         if len(document) == 0:
             document.close()
-            raise PdfServiceError("El PDF no contiene páginas.")
+            raise PdfServiceError("The PDF contains no pages.")
 
         self._document = document
         self._path = path
@@ -56,9 +56,9 @@ class PdfService:
 
     def render_page(self, page_index: int) -> PageImage:
         if self._document is None:
-            raise PdfServiceError("No hay ningún PDF abierto.")
+            raise PdfServiceError("No PDF is open.")
         if not 0 <= page_index < len(self._document):
-            raise PdfServiceError(f"Página fuera de rango: {page_index + 1}")
+            raise PdfServiceError(f"Page out of range: {page_index + 1}")
 
         cached = self._cache.get(page_index)
         if cached is not None:
@@ -79,7 +79,7 @@ class PdfService:
             )
         except Exception as exc:
             raise PdfServiceError(
-                f"No se pudo renderizar la página {page_index + 1}."
+                f"Could not render page {page_index + 1}."
             ) from exc
 
         self._cache[page_index] = image
