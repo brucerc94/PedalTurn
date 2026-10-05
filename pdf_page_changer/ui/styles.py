@@ -16,5 +16,49 @@ QPushButton#accentButton { background: #2c71d9; border-color: #2c71d9; }
 QPushButton#accentButton:hover { background: #3881ee; }
 QPushButton#dangerButton { color: #ffb4b4; }
 QStatusBar { background: #0f141a; color: #9ca9b7; }
-QComboBox { background: #0f141a; border: 1px solid #343e4a; border-radius: 6px; padding: 7px; }
+
+QFrame#floatingPanel {
+    background: rgba(15, 20, 26, 235);
+    border: 1px solid #3b4654;
+    border-radius: 10px;
+}
+
+QToolButton#floatingHandle {
+    background: rgba(15, 20, 26, 225);
+    border: 1px solid #3b4654;
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: #e8edf2;
+    font-size: 12pt;
+}
+
+QToolButton#floatingHandle:hover {
+    background: #252d37;
+}
+
+QComboBox#floatingQueue {
+    background: #0f141a;
+    border: 1px solid #343e4a;
+    border-radius: 6px;
+    padding: 7px;
+}
+
+QLabel#floatingPageInfo {
+    color: #c8d2dc;
+    padding: 0 5px;
+}
+
+QLabel#floatingStatus {
+    color: #7f8c9d;
+    padding: 0 4px;
+}
+
+QPushButton#dangerButton {
+    color: #ffb4b4;
+}
+
+QPushButton#accentButton {
+    background: #2c71d9;
+    border-color: #2c71d9;
+}
 """
