@@ -66,7 +66,7 @@ class FloatingControls(QFrame):
             lambda _item: self._close_playlist()
         )
 
-        popup_layout.addWidget(header, 0, 0)
+        popup_layout.addWidget(popup_header, 0, 0)
         popup_layout.addWidget(self._playlist, 1, 0)
 
         self._handle = QToolButton(self)
