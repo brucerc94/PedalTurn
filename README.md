@@ -76,22 +76,6 @@ Clone the repository, then run:
 run.bat
 ```
 
-The launcher creates or repairs the virtual environment, installs missing dependencies, and starts the application.
-
-For a clean Windows executable build:
-
-```bat
-build.bat
-```
-
-The generated executable is:
-
-```
-dist\PDFPageChangerPiano.exe
-```
-
-The Windows executable and application window use `icono.ico` as their icon.
-
 ## Controls
 
 | Action | Shortcut / Control |
