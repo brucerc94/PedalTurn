@@ -23,7 +23,7 @@ class MediaService(QObject):
 
     def play(self, path: Path) -> None:
         if not path.exists():
-            raise FileNotFoundError(f"No existe el video: {path}")
+            raise FileNotFoundError(f"Video not found: {path}")
         self._player.setSource(QUrl.fromLocalFile(str(path.resolve())))
         self._player.play()
 
@@ -32,8 +32,15 @@ class MediaService(QObject):
         self._player.setSource(QUrl())
 
     def is_playing(self) -> bool:
-        return self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
+        return (
+            self._player.playbackState()
+            == QMediaPlayer.PlaybackState.PlayingState
+        )
 
-    def _on_error(self, error: QMediaPlayer.Error, message: str) -> None:
+    def _on_error(
+        self,
+        error: QMediaPlayer.Error,
+        message: str,
+    ) -> None:
         if error != QMediaPlayer.Error.NoError:
-            self.error.emit(message or "Error de reproducción de video.")
+            self.error.emit(message or "Video playback error.")
