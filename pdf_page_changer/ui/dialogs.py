@@ -36,7 +36,7 @@ class MidiDeviceDialog(QDialog):
         cancel.clicked.connect(self.reject)
 
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Select a MIDI input device:"))
+        layout.addWidget(QLabel("Select the MIDI input device connected to your instrument or controller:"))
         layout.addWidget(self.list_widget)
         layout.addWidget(select)
         layout.addWidget(cancel)
@@ -53,25 +53,35 @@ class MidiDeviceDialog(QDialog):
 class MidiCaptureDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Detect MIDI Pedal")
+        self.setWindowTitle("Detect MIDI Page-Turn Control")
         self.setModal(True)
-        self.resize(420, 180)
+        self.resize(540, 250)
 
         self.label = QLabel(
-            "Press the pedal you want to use to advance one page."
+            "Press the MIDI pedal or control you want to use for page turning."
         )
         self.label.setWordWrap(True)
+
+        help_label = QLabel(
+            "Pianists with a three-pedal digital piano should normally assign "
+            "the middle pedal if it is available for page turning. "
+            "Players of other instruments can use any suitable pedal or MIDI "
+            "Control Change source. A key can also be used when the controller "
+            "is configured to send that control as a supported MIDI CC."
+        )
+        help_label.setWordWrap(True)
 
         cancel = QPushButton("Cancel")
         cancel.clicked.connect(self.reject)
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.label)
+        layout.addWidget(help_label)
         layout.addStretch()
         layout.addWidget(cancel)
 
     def show_detected(self, controller: int) -> None:
-        self.label.setText(f"Detected: CC #{controller}")
+        self.label.setText(f"Detected MIDI Control Change: CC #{controller}")
         QTimer.singleShot(250, self.accept)
 
 
@@ -104,11 +114,14 @@ class SettingsDialog(QDialog):
     ):
         super().__init__(parent)
         self.setWindowTitle("Settings")
-        self.resize(520, 300)
+        self.resize(560, 380)
 
         self.resolution = QComboBox()
         for option in self.RESOLUTIONS:
-            self.resolution.addItem(option.label, (option.width, option.height))
+            self.resolution.addItem(
+                option.label,
+                (option.width, option.height),
+            )
 
         index = next(
             (
@@ -128,8 +141,21 @@ class SettingsDialog(QDialog):
             f"CC #{pedal_cc}" if pedal_cc is not None else "Not configured"
         )
 
+        intro = QLabel(
+            "Connect a digital piano or MIDI controller to the PC. "
+            "PedalTurn receives the MIDI input and lets you assign a page-turn control."
+        )
+        intro.setWordWrap(True)
+
+        usage = QLabel(
+            "For pianists, the middle pedal is a practical choice when it is not "
+            "needed for playing. For other instruments, assign any suitable pedal "
+            "or MIDI Control Change source."
+        )
+        usage.setWordWrap(True)
+
         change_device = QPushButton("Change MIDI Device")
-        detect_pedal = QPushButton("Detect MIDI Pedal")
+        detect_pedal = QPushButton("Detect MIDI Page-Turn Control")
         close = QPushButton("Close")
 
         change_device.clicked.connect(
@@ -143,9 +169,12 @@ class SettingsDialog(QDialog):
         form = QFormLayout()
         form.addRow("Initial video size:", self.resolution)
         form.addRow("MIDI device:", self.device_label)
-        form.addRow("Pedal:", self.pedal_label)
+        form.addRow("Page-turn control:", self.pedal_label)
 
         layout = QVBoxLayout(self)
+        layout.addWidget(intro)
+        layout.addWidget(usage)
+        layout.addSpacing(6)
         layout.addLayout(form)
         layout.addWidget(change_device)
         layout.addWidget(detect_pedal)
