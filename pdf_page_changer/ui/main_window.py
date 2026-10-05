@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PDF Page Changer Piano")
+        self.setWindowTitle("PedalTurn")
         self.resize(1440, 900)
         self.setMinimumSize(1000, 650)
 
