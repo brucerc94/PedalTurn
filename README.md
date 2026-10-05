@@ -27,6 +27,7 @@ pdf_page_changer/
 - Cierre limpio de documentos PDF, MIDI y video.
 - Renderizado de páginas manteniendo la proporción.
 - Evita duplicar el mismo PDF en la cola.
+- Interfaz optimizada para pianistas: la partitura ocupa toda la ventana y los controles flotantes se ocultan automáticamente después de 3,5 segundos.
 
 ## Requisitos
 
