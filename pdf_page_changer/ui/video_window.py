@@ -10,7 +10,7 @@ class VideoWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Video — PDF Page Changer Piano")
+        self.setWindowTitle("Video — PedalTurn")
         self.setMinimumSize(640, 360)
         widget = QVideoWidget()
         widget.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
