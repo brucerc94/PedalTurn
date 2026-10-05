@@ -72,16 +72,37 @@ class MidiService:
         )
 
     def open(self, device_id: int) -> MidiDevice:
-        self.close_input()
+        current_device = self._device_id
 
+        # Si ya estamos usando este dispositivo, no intentamos abrirlo
+        # otra vez. Algunos drivers MIDI de Windows no permiten dos handles.
+        if self._input is not None and current_device == device_id:
+            return self._device_info(device_id)
+
+        # Abrimos primero el nuevo dispositivo. Si falla, conservamos
+        # el dispositivo actual para no dejar la aplicación sin MIDI.
         try:
-            self._input = pygame.midi.Input(device_id)
+            new_input = pygame.midi.Input(device_id)
         except Exception as exc:
+            detail = str(exc).strip()
+            suffix = f" ({detail})" if detail else ""
             raise RuntimeError(
-                f"No se pudo abrir el dispositivo MIDI #{device_id}."
+                f"No se pudo abrir el dispositivo MIDI #{device_id}{suffix}"
             ) from exc
 
+        old_input = self._input
+        self._input = new_input
         self._device_id = device_id
+
+        if old_input is not None:
+            try:
+                old_input.close()
+            except Exception:
+                pass
+
+        return self._device_info(device_id)
+
+    def _device_info(self, device_id: int) -> MidiDevice:
         return next(
             (
                 device
