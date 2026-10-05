@@ -66,6 +66,7 @@ class AppController:
         if device is None:
             devices = self._midi_service.list_input_devices()
             device = devices[0] if len(devices) == 1 else None
+
         try:
             if device is not None:
                 opened = self._midi_service.open(device.device_id)
@@ -78,16 +79,19 @@ class AppController:
                 )
         except RuntimeError as exc:
             self._window.set_status(str(exc))
+
         self._midi_timer.start()
 
     def add_pdf(self) -> None:
         path = self._window.open_pdf_dialog()
         if path is None:
             return
+
         resolved = path.resolve()
         if any(item.pdf_path.resolve() == resolved for item in self._state.items):
             self._window.set_status("That PDF is already in the playlist.")
             return
+
         self._state.items.append(ScoreItem(resolved))
         if len(self._state.items) == 1:
             self._open_current_pdf()
@@ -108,22 +112,26 @@ class AppController:
             return
         if path.suffix.lower() != ".vdp":
             path = path.with_suffix(".vdp")
+
         try:
             self._project_service.save(path, self._state.items)
         except ProjectFileError as exc:
             QMessageBox.critical(self._window, "Error", str(exc))
             return
+
         self._window.set_status(f"Playlist saved: {path.name}")
 
     def load_project(self) -> None:
         path = self._window.load_project_dialog()
         if path is None:
             return
+
         try:
             items = self._project_service.load(path)
         except ProjectFileError as exc:
             QMessageBox.critical(self._window, "Error", str(exc))
             return
+
         self._stop_video()
         self._state.set_items(items)
         self._open_current_pdf()
@@ -133,6 +141,7 @@ class AppController:
         item = self._state.current_item
         if item is None:
             return
+
         self._stop_video()
         removed = item.display_name
         self._state.remove_current_item()
@@ -153,10 +162,14 @@ class AppController:
                 "Add a PDF score first.",
             )
             return
+
         path = self._window.choose_video_dialog()
         if path is None:
             return
-        self._state.replace_current_item(ScoreItem(item.pdf_path, path.resolve()))
+
+        self._state.replace_current_item(
+            ScoreItem(item.pdf_path, path.resolve())
+        )
         self._window.set_status(f"Video assigned: {path.name}")
 
     def toggle_video(self) -> None:
@@ -176,7 +189,11 @@ class AppController:
         try:
             if not item.video_path.exists():
                 raise FileNotFoundError(f"Video not found: {item.video_path}")
-            self._video_window.resize(self._config.video_width, self._config.video_height)
+
+            self._video_window.resize(
+                self._config.video_width,
+                self._config.video_height,
+            )
             self._restore_video_position()
             self._video_window.show()
             self._media_service.play(item.video_path)
@@ -247,11 +264,13 @@ class AppController:
 
         if self._settings_dialog:
             self._settings_dialog.update_device(device.name)
+
         self._window.set_status(f"MIDI device selected: {device.name}")
 
     def capture_pedal(self) -> None:
         if self._capture_dialog is not None:
             return
+
         if self._midi_service.device_id is None:
             QMessageBox.information(
                 self._settings_dialog or self._window,
@@ -277,20 +296,26 @@ class AppController:
             self._state.current_page = new_page
             self._render_current_spread()
             return
+
         if self._state.current_index + 1 < len(self._state.items):
             self._switch_pdf(self._state.current_index + 1, 0)
             return
+
         self._window.set_status("Already at the end of the playlist.")
 
     def previous_page(self) -> None:
-        new_page = self._navigator.previous_within_document(self._state.current_page)
+        new_page = self._navigator.previous_within_document(
+            self._state.current_page
+        )
         if new_page is not None:
             self._state.current_page = new_page
             self._render_current_spread()
             return
+
         if self._state.current_index == 0:
             self._window.set_status("Already at the beginning of the playlist.")
             return
+
         self._switch_pdf(self._state.current_index - 1, None)
 
     def _switch_pdf(self, index: int, page: int | None) -> None:
@@ -350,6 +375,7 @@ class AppController:
     def _render_current_spread(self) -> None:
         if self._pdf_service.page_count <= 0:
             return
+
         pages = self._pdf_service.render_spread(self._state.current_page)
         self._window.score_viewer.set_pages(pages)
         self._sync_ui()
@@ -360,7 +386,10 @@ class AppController:
         self._sync_ui()
 
     def _sync_ui(self) -> None:
-        self._window.set_playlist(self._state.items, self._state.current_index)
+        self._window.set_playlist(
+            self._state.items,
+            self._state.current_index,
+        )
         self._window.set_score_info(
             self._state.current_item,
             self._state.current_page,
@@ -371,6 +400,7 @@ class AppController:
         for event in self._midi_service.poll():
             if not event.is_control_change:
                 continue
+
             if self._capture_dialog is not None:
                 self._capture_midi_event(event)
             else:
@@ -379,18 +409,22 @@ class AppController:
     def _capture_midi_event(self, event: MidiEvent) -> None:
         previous = self._last_midi_values.get(event.controller, 0)
         self._last_midi_values[event.controller] = event.value
+
         if event.value >= self.MIDI_THRESHOLD and previous < self.MIDI_THRESHOLD:
             self._config.midi_pedal_cc = event.controller
             self._config_service.save(self._config)
             self._capture_dialog.show_detected(event.controller)
+
             if self._settings_dialog:
                 self._settings_dialog.update_pedal(event.controller)
 
     def _handle_pedal_event(self, event: MidiEvent) -> None:
         previous = self._last_midi_values.get(event.controller, 0)
         self._last_midi_values[event.controller] = event.value
+
         if self._config.midi_pedal_cc is None:
             return
+
         if (
             event.controller == self._config.midi_pedal_cc
             and event.value >= self.MIDI_THRESHOLD
@@ -404,6 +438,7 @@ class AppController:
             self._config.video_x = position.x()
             self._config.video_y = position.y()
             self._config_service.save(self._config)
+
         self._media_service.stop()
         self._video_window.hide()
 
@@ -416,7 +451,10 @@ class AppController:
 
     def _restore_video_position(self) -> None:
         if self._config.video_x is not None and self._config.video_y is not None:
-            self._video_window.move(self._config.video_x, self._config.video_y)
+            self._video_window.move(
+                self._config.video_x,
+                self._config.video_y,
+            )
 
     def _on_media_error(self, message: str) -> None:
         self._video_window.hide()
@@ -432,6 +470,7 @@ class AppController:
     def shutdown(self) -> None:
         if self._shutting_down:
             return
+
         self._shutting_down = True
         self._midi_timer.stop()
         self._stop_video()
