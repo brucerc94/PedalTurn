@@ -1,113 +1,178 @@
-# PDF Page Changer Piano
+<p align="center">
+  <img src="icono.ico" alt="PDF Page Changer Piano" width="96">
+</p>
 
-Visor de partituras PDF pensado para tocar con piano/teclado y pedal MIDI.
+<h1 align="center">PDF Page Changer Piano</h1>
 
-## Versión 2.0 — refactor modular
+<p align="center">
+  A modern Windows score viewer with MIDI pedal page turning and optional video playback.
+</p>
 
-Esta rama reemplaza la implementación monolítica anterior por una arquitectura separada por responsabilidades.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/PySide6-Qt%206-41CD52?style=for-the-badge&logo=qt&logoColor=white" alt="PySide6">
+  <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows">
+</p>
 
-pdf_page_changer/
-  core/              Modelos y reglas de navegación
-  controllers/       Orquestación de la aplicación
-  services/          PDF, MIDI, video, configuración y proyectos
-  ui/                Ventanas, diálogos, visor y estilos
-  main.py            Entrada de la aplicación
+## Overview
 
-## Qué cambia
+PDF Page Changer Piano is a distraction-free score viewer designed for pianists and keyboard players who need reliable hands-free page turning.
 
-- PySide6 / Qt 6 en lugar de Tkinter.
-- Qt Multimedia para video; se elimina OpenCV de la reproducción.
-- Sin estado global para PDF, video, MIDI o configuración.
-- Navegación de partituras separada de la interfaz.
-- Configuración centralizada y tolerante a JSON inválido.
-- Caché LRU para páginas renderizadas.
-- Compatibilidad con proyectos .vdp de la versión anterior.
-- Detección MIDI no bloqueante mediante el event loop de Qt.
-- El pedal responde a una transición de reposo a pulsación para evitar múltiples avances mientras se mantiene presionado.
-- Cierre limpio de documentos PDF, MIDI y video.
-- Renderizado de páginas manteniendo la proporción.
-- Evita duplicar el mismo PDF en la cola.
-- Interfaz optimizada para pianistas: la partitura ocupa toda la ventana y los controles flotantes se ocultan automáticamente después de 3,5 segundos.
-- La cola de partituras se muestra en un popup flotante mediante Partituras (N), sin ocupar espacio permanente del visor.
+It combines:
 
-## Requisitos
+- High-quality PDF score rendering
+- Two-page spread viewing
+- MIDI Control Change pedal navigation
+- Optional video playback linked to each score
+- Floating controls that automatically hide while playing
+- Playlist management for multiple scores
+- Versioned `.vdp` project files
 
-- Windows 10/11
-- Python 3.10 o superior
-- Dispositivo MIDI opcional
+The application is built with a modular architecture that separates the UI, application orchestration, navigation rules, and media services.
 
-## Ejecutar
+## Highlights
 
-1. Ejecuta build.bat para crear/actualizar venv e instalar dependencias.
-2. Ejecuta run.bat para activar venv y lanzar la aplicación.
+### Pianist-focused interface
 
-También puedes ejecutar PageChangerPiano.py directamente desde el entorno virtual.
+The score occupies the available window with minimal visual distraction. The control panel floats over the viewer and automatically hides after 3.5 seconds.
 
-## Generar EXE
+Press `Esc` to bring the controls back instantly.
 
-Usa build.bat o build.ps1.
+### MIDI pedal page turning
 
-El ejecutable se genera en dist/PDFPageChangerPiano.exe.
+Connect a MIDI input device and assign any Control Change message to page turning. The pedal is edge-triggered, so holding it down does not repeatedly advance pages.
 
-## Funciones
+### Score playlist
 
-### Partituras
-- Agregar múltiples PDFs.
-- Seleccionar cualquier PDF de la cola.
-- Mostrar dos páginas simultáneamente.
-- Siguiente/anterior con botones.
-- Navegación con flechas izquierda/derecha.
-- Zoom con Ctrl + rueda del mouse.
-- Controles de zoom Ajustar, + y −.
+Load multiple PDF scores and switch between them from a compact floating playlist. Each entry can show its current, video-linked, or missing-file state.
 
-### MIDI
-- Lista de dispositivos MIDI de entrada.
-- Selección de dispositivo desde Configuración.
-- Detección del número CC del pedal.
-- Soporte para cualquier canal de mensajes Control Change.
-- Anti-repetición mientras el pedal permanece presionado.
+### Video playback
 
-### Video
-- Un video asociado a cada PDF.
-- Ventana independiente.
-- Reproducción en bucle.
-- Conserva la posición de la ventana.
-- Mantiene la relación de aspecto.
-- Formatos habituales como MP4, AVI, MOV, MKV y WebM según codecs/backend disponibles.
+Attach one video to each PDF score. Videos play in a separate Qt Multimedia window, loop automatically, preserve aspect ratio, and remember their last window position.
 
-## Proyectos VDP
+## Features
 
-La versión 2 usa un formato versionado con una lista de items, cada uno con PDF y video opcional.
+| Area | Features |
+| --- | --- |
+| PDF | Two-page spreads, aspect-ratio preservation, page navigation, zoom, LRU page cache |
+| MIDI | Device discovery, device selection, automatic pedal detection, channel-independent CC handling, press-edge triggering |
+| Video | MP4/AVI/MOV/MKV/WebM support depending on the installed Qt Multimedia backend, looping playback, persistent window position |
+| Projects | Version 2 `.vdp` format with legacy project compatibility |
+| UI | PySide6 / Qt 6, dark theme, floating controls, auto-hide behavior, no Tkinter |
+| Reliability | No global application state, clean PDF/MIDI/video shutdown, duplicate-PDF prevention |
 
-Los proyectos antiguos que usaban pdf_queue y video_map continúan siendo compatibles.
+## Requirements
 
-## Configuración
+- Windows 10 or Windows 11
+- Python 3.10 or newer
+- A MIDI input device is optional
+- Qt Multimedia-compatible codecs/backend for video formats that require them
 
-config.json almacena tamaño inicial de video, CC MIDI, nombre del dispositivo MIDI y posición de la ventana de video.
+## Quick Start
 
-La ubicación se resuelve junto al ejecutable cuando está empaquetado y junto al proyecto cuando se ejecuta como Python.
+Clone the repository, then run:
 
-## Pruebas
+```bat
+run.bat
+```
 
-Ejecuta: python -m unittest discover -s tests -v
+The launcher creates or repairs the virtual environment, installs missing dependencies, and starts the application.
 
-Las pruebas actuales cubren navegación y compatibilidad del formato VDP.
+For a clean Windows executable build:
 
-## Estructura
+```bat
+build.bat
+```
 
+The generated executable is:
+
+```
+dist\PDFPageChangerPiano.exe
+```
+
+The Windows executable and application window use `icono.ico` as their icon.
+
+## Controls
+
+| Action | Shortcut / Control |
+| --- | --- |
+| Next spread | `Right Arrow` or MIDI pedal |
+| Previous spread | `Left Arrow` |
+| Show controls | `Esc` |
+| Zoom in/out | `Ctrl + Mouse Wheel` |
+| Fit to screen | Floating control: **Fit** |
+
+## MIDI Setup
+
+1. Open **Settings**.
+2. Select the MIDI input device.
+3. Use **Detect MIDI Pedal** and press the desired pedal once.
+4. The detected Control Change number is stored in `config.json`.
+
+The MIDI layer accepts Control Change messages on any MIDI channel.
+
+## VDP Projects
+
+The current project format is versioned:
+
+```json
+{
+  "version": 2,
+  "items": [
+    {
+      "pdf": "C:\\Scores\\Example.pdf",
+      "video": "C:\\Videos\\Example.mp4"
+    }
+  ]
+}
+```
+
+Older projects that use `pdf_queue` and `video_map` remain readable.
+
+## Configuration
+
+`config.json` stores:
+
+- Video window width and height
+- Selected MIDI device name
+- MIDI pedal Control Change number
+- Saved video window position
+
+When running from Python, configuration is resolved from the project directory. When running as a packaged executable, it is resolved next to the executable.
+
+## Architecture
+
+```text
 PDFPageChangerPiano/
-  pdf_page_changer/
-  tests/
-  PageChangerPiano.py
-  requirements.txt
-  pyproject.toml
-  build.bat
-  build.ps1
-  run.bat
-  icono.ico
-  config.json
-  README.md
+├── pdf_page_changer/
+│   ├── core/           # Domain models and navigation rules
+│   ├── controllers/    # Application orchestration
+│   ├── services/      # PDF, MIDI, media, config, project services
+│   ├── ui/            # Qt windows, dialogs, viewer and styling
+│   ├── utils/         # Application paths
+│   └── main.py        # Application entry point
+├── PageChangerPiano.py
+├── requirements.txt
+├── build.bat
+├── run.bat
+├── config.json
+├── icono.ico
+└── README.md
+```
 
-## Autor
+## Technology
 
-Bruno Rivas Centty
+- **Python**
+- **PySide6 / Qt 6**
+- **PyMuPDF**
+- **Pygame MIDI**
+- **Qt Multimedia**
+- **PyInstaller**
+
+## Project Status
+
+This branch contains the modular refactor of the original application. The legacy Tkinter UI has been replaced with PySide6, while PDF, MIDI, project, configuration, and media responsibilities are separated into dedicated modules.
+
+## Author
+
+**Bruno Rivas Centty**
