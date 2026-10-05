@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 from .controllers.app_controller import AppController
@@ -14,6 +15,11 @@ def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName("PDF Page Changer Piano")
     app.setApplicationDisplayName("PDF Page Changer Piano")
+
+    icon_path = AppPaths.icon_file()
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
+
     app.setStyleSheet(APPLICATION_STYLE)
 
     controller = AppController(ConfigService(AppPaths.config_file()))
