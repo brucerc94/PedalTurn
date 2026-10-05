@@ -17,7 +17,7 @@ Write-Host "Installing dependencies..." -ForegroundColor Yellow
 & $python -m pip install -r requirements.txt
 
 Write-Host "Building executable..." -ForegroundColor Yellow
-& $python -m PyInstaller --clean --noconfirm --onefile --windowed --name PDFPageChangerPiano --icon icono.ico --hidden-import PySide6.QtMultimedia --hidden-import PySide6.QtMultimediaWidgets PageChangerPiano.py
+& $python -m PyInstaller --clean --noconfirm --onefile --windowed --name PDFPageChangerPiano --icon icono.ico --collect-all PySide6.QtMultimedia --hidden-import PySide6.QtMultimedia --hidden-import PySide6.QtMultimediaWidgets PageChangerPiano.py
 
 Write-Host "" 
 Write-Host "Build completed successfully." -ForegroundColor Green
