@@ -55,6 +55,7 @@ class FloatingControls(QFrame):
         self._add_button(layout, "Eliminar", self.remove_pdf_requested.emit, "dangerButton")
         self._add_button(layout, "←", self.previous_page_requested.emit)
         self._add_button(layout, "→", self.next_page_requested.emit, "accentButton")
+        self._add_button(layout, "Agregar video", self.add_video_requested.emit)
         self._add_button(layout, "Video", self.toggle_video_requested.emit)
         self._add_button(layout, "Config", self.settings_requested.emit)
         self._add_button(layout, "−", self._zoom_out)
