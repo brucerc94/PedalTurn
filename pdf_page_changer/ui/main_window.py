@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
 
         self.statusBar().setVisible(False)
         self.menuBar().setVisible(False)
+        self._position_controls()
 
     def _build_connections(self) -> None:
         signals = (
