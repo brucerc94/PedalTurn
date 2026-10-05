@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QTimer, Signal
-from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QToolButton
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QGridLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QToolButton,
+)
 
 
 class FloatingControls(QFrame):
@@ -20,6 +28,8 @@ class FloatingControls(QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
         self._hide_timer = QTimer(self)
         self._hide_timer.setSingleShot(True)
         self._hide_timer.setInterval(self.HIDE_DELAY_MS)
@@ -27,74 +37,79 @@ class FloatingControls(QFrame):
 
         self._panel = QFrame(self)
         self._panel.setObjectName("floatingPanel")
+
         self._handle = QToolButton(self)
         self._handle.setObjectName("floatingHandle")
         self._handle.setText("☰")
+        self._handle.setToolTip("Mostrar controles")
         self._handle.clicked.connect(self.show_controls)
+
+        self._queue = QComboBox()
+        self._queue.setObjectName("floatingQueue")
+        self._queue.setMinimumWidth(240)
+        self._queue.setToolTip("Partitura actual")
+        self._queue.currentIndexChanged.connect(self.pdf_selected.emit)
 
         self._page_info = QLabel()
         self._page_info.setObjectName("floatingPageInfo")
 
         self._status = QLabel()
         self._status.setObjectName("floatingStatus")
-        self._status.setMaximumWidth(230)
+        self._status.setMaximumWidth(210)
 
-        self._queue = QComboBox()
-        self._queue.setObjectName("floatingQueue")
-        self._queue.setMinimumWidth(230)
-        self._queue.currentIndexChanged.connect(self.pdf_selected.emit)
-
-        layout = QHBoxLayout(self._panel)
+        layout = QGridLayout(self._panel)
         layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
+        layout.setHorizontalSpacing(5)
+        layout.setVerticalSpacing(5)
 
-        layout.addWidget(self._queue, 1)
-        self._add_button(layout, "+ PDF", self.add_pdf_requested.emit, "accentButton")
-        self._add_button(layout, "Guardar", self.save_project_requested.emit)
-        self._add_button(layout, "Cargar", self.load_project_requested.emit)
-        self._add_button(layout, "Eliminar", self.remove_pdf_requested.emit, "dangerButton")
-        self._add_button(layout, "←", self.previous_page_requested.emit)
-        self._add_button(layout, "→", self.next_page_requested.emit, "accentButton")
-        self._add_button(layout, "Agregar video", self.add_video_requested.emit)
-        self._add_button(layout, "Video", self.toggle_video_requested.emit)
-        self._add_button(layout, "Config", self.settings_requested.emit)
-        self._add_button(layout, "−", self._zoom_out)
-        self._add_button(layout, "Ajustar", self._fit_requested)
-        self._add_button(layout, "+", self._zoom_in)
-        layout.addWidget(self._page_info)
-        layout.addWidget(self._status)
+        layout.addWidget(self._queue, 0, 0, 1, 4)
+        self._add_button(layout, "←", self.previous_page_requested.emit, 0, 4, "Página anterior")
+        self._add_button(layout, "→", self.next_page_requested.emit, 0, 5, "Página siguiente")
+        layout.addWidget(self._page_info, 0, 6, 1, 5)
+
+        self._add_button(layout, "+ PDF", self.add_pdf_requested.emit, 1, 0, "Agregar PDF", "accentButton")
+        self._add_button(layout, "Guardar", self.save_project_requested.emit, 1, 1, "Guardar lista")
+        self._add_button(layout, "Cargar", self.load_project_requested.emit, 1, 2, "Cargar lista")
+        self._add_button(layout, "Eliminar", self.remove_pdf_requested.emit, 1, 3, "Eliminar PDF", "dangerButton")
+        self._add_button(layout, "+ Video", self.add_video_requested.emit, 1, 4, "Agregar video")
+        self._add_button(layout, "Video", self.toggle_video_requested.emit, 1, 5, "Mostrar u ocultar video")
+        self._add_button(layout, "Config", self.settings_requested.emit, 1, 6, "Configuración")
+        self._add_button(layout, "−", self._zoom_out, 1, 7, "Reducir zoom")
+        self._add_button(layout, "Ajustar", self._fit_requested, 1, 8, "Ajustar a pantalla")
+        self._add_button(layout, "+", self._zoom_in, 1, 9, "Aumentar zoom")
+        layout.addWidget(self._status, 1, 10)
 
         self._panel.installEventFilter(self)
         self.installEventFilter(self)
+
         self._panel.adjustSize()
-        self.setFixedHeight(self._panel.sizeHint().height())
-        self.setMinimumWidth(min(1100, self._panel.sizeHint().width()))
+        self._handle.adjustSize()
         self.show_controls()
 
     def bind_viewer(self, viewer) -> None:
         self._viewer = viewer
 
-    def _add_button(self, layout: QHBoxLayout, text: str, slot, object_name: str | None = None) -> QPushButton:
+    @staticmethod
+    def _add_button(layout, text: str, slot, row: int, column: int, tooltip: str, object_name: str | None = None) -> QPushButton:
         button = QPushButton(text)
         if object_name:
             button.setObjectName(object_name)
+        button.setToolTip(tooltip)
+        button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         button.clicked.connect(lambda _checked=False: slot())
-        layout.addWidget(button)
+        layout.addWidget(button, row, column)
         return button
 
     def _zoom_out(self) -> None:
-        if hasattr(self, "_viewer"):
-            self._viewer.zoom_out()
+        self._viewer.zoom_out()
         self._restart_hide_timer()
 
     def _fit_requested(self) -> None:
-        if hasattr(self, "_viewer"):
-            self._viewer.reset_zoom()
+        self._viewer.reset_zoom()
         self._restart_hide_timer()
 
     def _zoom_in(self) -> None:
-        if hasattr(self, "_viewer"):
-            self._viewer.zoom_in()
+        self._viewer.zoom_in()
         self._restart_hide_timer()
 
     def set_playlist(self, items, current_index: int) -> None:
@@ -113,8 +128,8 @@ class FloatingControls(QFrame):
         self._status.setText(text)
 
     def show_controls(self) -> None:
-        self._panel.show()
         self._handle.hide()
+        self._panel.show()
         self._panel.adjustSize()
         self.setFixedSize(self._panel.sizeHint())
         self.raise_()
