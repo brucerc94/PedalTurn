@@ -131,7 +131,7 @@ class MainWindow(QMainWindow):
     def open_pdf_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Score",
+            "Select PDF Score",
             "",
             "PDF Scores (*.pdf)",
         )
@@ -140,18 +140,18 @@ class MainWindow(QMainWindow):
     def save_project_dialog(self) -> Path | None:
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Save Playlist",
+            "Save VDP Project",
             "",
-            "VDP Project (*.vdp)",
+            "VDP Projects (*.vdp)",
         )
         return Path(path) if path else None
 
     def load_project_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Load Playlist",
+            "Load VDP Project",
             "",
-            "VDP Project (*.vdp)",
+            "VDP Projects (*.vdp)",
         )
         return Path(path) if path else None
 
