@@ -30,6 +30,7 @@ htmlcov/
 *.log
 
 # Local project files
+run.bat
 config.json
 build.bat
 *.vdp
