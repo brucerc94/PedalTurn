@@ -141,8 +141,6 @@ QListWidget::item:selected {
     background: #2c71d9;
     color: white;
 }
-"""
-
 
 QLabel#sourceLink {
     background: rgba(0, 0, 0, 150);
@@ -162,3 +160,4 @@ QLabel#sourceLink a:hover {
     color: #ffffff;
     text-decoration: underline;
 }
+"""
