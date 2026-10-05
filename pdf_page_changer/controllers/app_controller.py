@@ -99,6 +99,8 @@ class AppController:
         path = self._window.save_project_dialog()
         if path is None:
             return
+        if path.suffix.lower() != ".vdp":
+            path = path.with_suffix(".vdp")
         try:
             self._project_service.save(path, self._state.items)
         except ProjectFileError as exc:
@@ -346,6 +348,11 @@ class AppController:
             self.next_page()
 
     def _stop_video(self) -> None:
+        if self._video_window.isVisible():
+            position = self._video_window.pos()
+            self._config.video_x = position.x()
+            self._config.video_y = position.y()
+            self._config_service.save(self._config)
         self._media_service.stop()
         self._video_window.hide()
 
