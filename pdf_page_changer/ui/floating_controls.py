@@ -121,86 +121,34 @@ class FloatingControls(QFrame):
         layout.addWidget(self._page_info, 0, 6, 1, 5)
 
         self._add_button(
-            layout,
-            "+ PDF",
-            self.add_pdf_requested.emit,
-            1,
-            0,
-            "Add PDF",
-            "accentButton",
+            layout, "+ PDF", self.add_pdf_requested.emit, 1, 0, "Add PDF", "accentButton"
         )
         self._add_button(
-            layout,
-            "Save",
-            self.save_project_requested.emit,
-            1,
-            1,
-            "Save playlist",
+            layout, "Save", self.save_project_requested.emit, 1, 1, "Save playlist"
         )
         self._add_button(
-            layout,
-            "Load",
-            self.load_project_requested.emit,
-            1,
-            2,
-            "Load playlist",
+            layout, "Load", self.load_project_requested.emit, 1, 2, "Load playlist"
         )
         self._add_button(
-            layout,
-            "Remove",
-            self.remove_pdf_requested.emit,
-            1,
-            3,
-            "Remove PDF",
-            "dangerButton",
+            layout, "Remove", self.remove_pdf_requested.emit, 1, 3, "Remove PDF", "dangerButton"
         )
         self._add_button(
-            layout,
-            "+ Video",
-            self.add_video_requested.emit,
-            1,
-            4,
-            "Add video",
+            layout, "+ Video", self.add_video_requested.emit, 1, 4, "Add video"
         )
         self._add_button(
-            layout,
-            "Video",
-            self.toggle_video_requested.emit,
-            1,
-            5,
-            "Show or hide video",
+            layout, "Video", self.toggle_video_requested.emit, 1, 5, "Show or hide video"
         )
         self._add_button(
-            layout,
-            "Settings",
-            self.settings_requested.emit,
-            1,
-            6,
-            "Settings",
+            layout, "Settings", self.settings_requested.emit, 1, 6, "Settings"
         )
         self._add_button(
-            layout,
-            "−",
-            self._zoom_out,
-            1,
-            7,
-            "Zoom out",
+            layout, "−", self._zoom_out, 1, 7, "Zoom out"
         )
         self._add_button(
-            layout,
-            "Fit",
-            self._fit_requested,
-            1,
-            8,
-            "Fit to screen",
+            layout, "Fit", self._fit_requested, 1, 8, "Fit to screen"
         )
         self._add_button(
-            layout,
-            "+",
-            self._zoom_in,
-            1,
-            9,
-            "Zoom in",
+            layout, "+", self._zoom_in, 1, 9, "Zoom in"
         )
         layout.addWidget(self._status, 1, 10)
 
@@ -354,10 +302,7 @@ class FloatingControls(QFrame):
 
     def eventFilter(self, obj, event: QEvent) -> bool:
         if obj is self._playlist_popup:
-            if event.type() in (
-                QEvent.Type.Enter,
-                QEvent.Type.MouseMove,
-            ):
+            if event.type() in (QEvent.Type.Enter, QEvent.Type.MouseMove):
                 self._hide_timer.stop()
             elif event.type() == QEvent.Type.Leave:
                 self._restart_hide_timer()
