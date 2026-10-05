@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtGui import QAction, QDesktopServices, QKeySequence
+from PySide6.QtWidgets import QFileDialog, QLabel, QMainWindow, QVBoxLayout, QWidget
 
 from ..core.models import ScoreItem
 from .floating_controls import FloatingControls
@@ -22,6 +22,8 @@ class MainWindow(QMainWindow):
     toggle_video_requested = Signal()
     settings_requested = Signal()
     pdf_selected = Signal(int)
+
+    SOURCE_URL = "https://github.com/brucerc94/PedalTurn"
 
     def __init__(self):
         super().__init__()
@@ -44,6 +46,17 @@ class MainWindow(QMainWindow):
         self.score_viewer = ScoreViewer()
         layout.addWidget(self.score_viewer, 1)
 
+        self._source_link = QLabel(root)
+        self._source_link.setObjectName("sourceLink")
+        self._source_link.setText(
+            f'<a href="{self.SOURCE_URL}">Source repository: github.com/brucerc94/PedalTurn</a>'
+        )
+        self._source_link.setOpenExternalLinks(False)
+        self._source_link.linkActivated.connect(
+            lambda url: QDesktopServices.openUrl(QUrl(url))
+        )
+        self._source_link.adjustSize()
+
         self.controls = FloatingControls(root)
         self.controls.bind_viewer(self.score_viewer)
         self.controls.show_controls()
@@ -51,6 +64,7 @@ class MainWindow(QMainWindow):
         self.statusBar().setVisible(False)
         self.menuBar().setVisible(False)
         self._position_controls()
+        self._position_source_link()
 
     def _build_connections(self) -> None:
         connections = (
@@ -85,6 +99,7 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         self._position_controls()
+        self._position_source_link()
 
     def _position_controls(self) -> None:
         margin = 18
@@ -98,6 +113,16 @@ class MainWindow(QMainWindow):
             margin,
             width,
             size.height(),
+        )
+
+    def _position_source_link(self) -> None:
+        if not hasattr(self, "_source_link"):
+            return
+        margin = 14
+        self._source_link.adjustSize()
+        self._source_link.move(
+            self.centralWidget().width() - self._source_link.width() - margin,
+            self.centralWidget().height() - self._source_link.height() - margin,
         )
 
     def set_playlist(self, items: list[ScoreItem], current_index: int) -> None:
