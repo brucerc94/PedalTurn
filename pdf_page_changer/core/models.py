@@ -22,11 +22,14 @@ class PlaylistState:
 
     @property
     def current_item(self) -> ScoreItem | None:
-        if not self.items:
-            return None
-        if not 0 <= self.current_index < len(self.items):
+        if not self.items or not 0 <= self.current_index < len(self.items):
             return None
         return self.items[self.current_index]
+
+    def reset(self) -> None:
+        self.items.clear()
+        self.current_index = 0
+        self.current_page = 0
 
     def set_items(self, items: list[ScoreItem]) -> None:
         self.items = items
@@ -34,9 +37,8 @@ class PlaylistState:
         self.current_page = 0
 
     def replace_current_item(self, item: ScoreItem) -> None:
-        if self.current_item is None:
-            return
-        self.items[self.current_index] = item
+        if self.current_item is not None:
+            self.items[self.current_index] = item
 
     def remove_current_item(self) -> None:
         if not self.items:

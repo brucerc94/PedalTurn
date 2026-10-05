@@ -47,6 +47,7 @@ class MidiService:
             info = pygame.midi.get_device_info(device_id)
             if not info:
                 continue
+
             _, name, is_input, _, _ = info
             if is_input:
                 devices.append(
@@ -60,35 +61,61 @@ class MidiService:
     def find_device_by_name(self, name: str | None) -> MidiDevice | None:
         if not name:
             return None
-        normalized = name.strip().casefold()
+
+        target = name.strip().casefold()
         return next(
-            (device for device in self.list_input_devices()
-             if device.name.casefold() == normalized),
+            (
+                device
+                for device in self.list_input_devices()
+                if device.name.casefold() == target
+            ),
             None,
         )
 
     def open(self, device_id: int) -> MidiDevice:
-        self.close_input()
-        try:
-            self._input = pygame.midi.Input(device_id)
-        except Exception as exc:
-            raise RuntimeError(f"No se pudo abrir el dispositivo MIDI #{device_id}") from exc
+        current_device = self._device_id
 
+        # If this device is already open, reuse the existing handle.
+        # Some Windows MIDI drivers do not allow two simultaneous handles.
+        if self._input is not None and current_device == device_id:
+            return self._device_info(device_id)
+
+        # Open the new device first. If it fails, keep the current device
+        # active so the application is not left without MIDI input.
+        try:
+            new_input = pygame.midi.Input(device_id)
+        except Exception as exc:
+            detail = str(exc).strip()
+            suffix = f" ({detail})" if detail else ""
+            raise RuntimeError(
+                f"Could not open MIDI device #{device_id}{suffix}"
+            ) from exc
+
+        old_input = self._input
+        self._input = new_input
         self._device_id = device_id
-        device = next(
-            (item for item in self.list_input_devices() if item.device_id == device_id),
-            None,
+
+        if old_input is not None:
+            try:
+                old_input.close()
+            except Exception:
+                pass
+
+        return self._device_info(device_id)
+
+    def _device_info(self, device_id: int) -> MidiDevice:
+        return next(
+            (
+                device
+                for device in self.list_input_devices()
+                if device.device_id == device_id
+            ),
+            MidiDevice(device_id, f"MIDI #{device_id}"),
         )
-        if device is None:
-            self.close_input()
-            raise RuntimeError("El dispositivo MIDI seleccionado ya no está disponible.")
-        return device
 
     def open_first_input(self) -> MidiDevice | None:
         devices = self.list_input_devices()
-        if not devices:
-            return None
-        return self.open(devices[0].device_id)
+        return self.open(devices[0].device_id) if devices else None
 
     def clear_pending(self) -> None:
         if self._input is None:

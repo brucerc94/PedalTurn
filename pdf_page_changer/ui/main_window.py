@@ -2,23 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import (
-    QFileDialog,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QListWidget,
-    QMainWindow,
-    QPushButton,
-    QSplitter,
-    QStatusBar,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QVBoxLayout, QWidget
 
 from ..core.models import ScoreItem
+from .floating_controls import FloatingControls
 from .score_viewer import ScoreViewer
 
 
@@ -38,239 +27,138 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("PDF Page Changer Piano")
         self.resize(1440, 900)
-        self.setMinimumSize(1100, 700)
+        self.setMinimumSize(1000, 650)
 
-        self._build_menu()
         self._build_ui()
-
-    def _build_menu(self) -> None:
-        file_menu = self.menuBar().addMenu("Archivo")
-        file_menu.addAction(self._action("Agregar PDF", self.add_pdf_requested.emit))
-        file_menu.addAction(self._action("Guardar lista", self.save_project_requested.emit))
-        file_menu.addAction(self._action("Cargar lista", self.load_project_requested.emit))
-        file_menu.addSeparator()
-        file_menu.addAction(self._action("Salir", self.close))
-
-        view_menu = self.menuBar().addMenu("Ver")
-        view_menu.addAction(
-            self._action("Página anterior", self.previous_page_requested.emit)
-        )
-        view_menu.addAction(
-            self._action("Página siguiente", self.next_page_requested.emit)
-        )
-
-        settings_menu = self.menuBar().addMenu("Configuración")
-        settings_menu.addAction(
-            self._action("Preferencias", self.settings_requested.emit)
-        )
-
-    def _action(self, text: str, slot) -> QAction:
-        action = QAction(text, self)
-        action.triggered.connect(slot)
-        return action
+        self._install_shortcuts()
+        self._build_connections()
 
     def _build_ui(self) -> None:
         root = QWidget()
         self.setCentralWidget(root)
 
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.setChildrenCollapsible(False)
-
-        sidebar = QFrame()
-        sidebar.setObjectName("sidebar")
-        sidebar.setMinimumWidth(300)
-        sidebar.setMaximumWidth(380)
-
-        sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(18, 18, 18, 18)
-        sidebar_layout.setSpacing(10)
-
-        app_title = QLabel("PDF Page Changer")
-        app_title.setObjectName("appTitle")
-        sidebar_layout.addWidget(app_title)
-
-        subtitle = QLabel("Visor de partituras + control MIDI")
-        subtitle.setObjectName("statusLabel")
-        sidebar_layout.addWidget(subtitle)
-
-        sidebar_layout.addSpacing(10)
-        sidebar_layout.addWidget(self._section_label("ARCHIVOS"))
-        sidebar_layout.addWidget(self._button("Agregar PDF", self.add_pdf_requested.emit, True))
-        sidebar_layout.addWidget(self._button("Guardar lista", self.save_project_requested.emit))
-        sidebar_layout.addWidget(self._button("Cargar lista", self.load_project_requested.emit))
-        sidebar_layout.addWidget(
-            self._button("Eliminar PDF", self.remove_pdf_requested.emit, danger=True)
-        )
-
-        sidebar_layout.addSpacing(8)
-        sidebar_layout.addWidget(self._section_label("NAVEGACIÓN"))
-        nav_row = QHBoxLayout()
-        nav_row.addWidget(
-            self._button("← Anterior", self.previous_page_requested.emit)
-        )
-        nav_row.addWidget(
-            self._button("Siguiente →", self.next_page_requested.emit)
-        )
-        sidebar_layout.addLayout(nav_row)
-
-        sidebar_layout.addSpacing(8)
-        sidebar_layout.addWidget(self._section_label("MULTIMEDIA"))
-        sidebar_layout.addWidget(
-            self._button("Agregar video", self.add_video_requested.emit)
-        )
-        sidebar_layout.addWidget(
-            self._button("Mostrar / ocultar video", self.toggle_video_requested.emit)
-        )
-
-        sidebar_layout.addSpacing(8)
-        sidebar_layout.addWidget(self._section_label("CONFIGURACIÓN"))
-        sidebar_layout.addWidget(
-            self._button("Preferencias", self.settings_requested.emit)
-        )
-
-        sidebar_layout.addSpacing(12)
-        sidebar_layout.addWidget(self._section_label("COLA DE PARTITURAS"))
-        self.playlist = QListWidget()
-        self.playlist.currentRowChanged.connect(self.pdf_selected.emit)
-        sidebar_layout.addWidget(self.playlist, 1)
-
-        viewer_container = QWidget()
-        viewer_layout = QVBoxLayout(viewer_container)
-        viewer_layout.setContentsMargins(0, 0, 0, 0)
-        viewer_layout.setSpacing(0)
-
-        header = QFrame()
-        header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(18, 14, 18, 10)
-
-        self.score_title = QLabel("Sin PDF cargado")
-        self.score_title.setObjectName("scoreTitle")
-        self.page_info = QLabel("")
-        self.page_info.setObjectName("pageInfo")
-        header_layout.addWidget(self.score_title)
-        header_layout.addWidget(self.page_info)
+        layout = QVBoxLayout(root)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         self.score_viewer = ScoreViewer()
+        layout.addWidget(self.score_viewer, 1)
 
-        controls = QHBoxLayout()
-        controls.setContentsMargins(18, 0, 18, 12)
-        controls.addStretch()
-        zoom_out = QPushButton("−")
-        zoom_out.setFixedWidth(42)
-        zoom_out.clicked.connect(self.score_viewer.zoom_out)
-        fit = QPushButton("Ajustar")
-        fit.clicked.connect(self.score_viewer.reset_zoom)
-        zoom_in = QPushButton("+")
-        zoom_in.setFixedWidth(42)
-        zoom_in.clicked.connect(self.score_viewer.zoom_in)
-        controls.addWidget(zoom_out)
-        controls.addWidget(fit)
-        controls.addWidget(zoom_in)
+        self.controls = FloatingControls(root)
+        self.controls.bind_viewer(self.score_viewer)
+        self.controls.show_controls()
 
-        viewer_layout.addWidget(header)
-        viewer_layout.addWidget(self.score_viewer, 1)
-        viewer_layout.addLayout(controls)
+        self.statusBar().setVisible(False)
+        self.menuBar().setVisible(False)
+        self._position_controls()
 
-        splitter.addWidget(sidebar)
-        splitter.addWidget(viewer_container)
-        splitter.setSizes([320, 1120])
-
-        root_layout = QHBoxLayout(root)
-        root_layout.setContentsMargins(8, 8, 8, 8)
-        root_layout.addWidget(splitter)
-
-        self.status = QStatusBar()
-        self.setStatusBar(self.status)
-
-        self._install_shortcuts()
+    def _build_connections(self) -> None:
+        connections = (
+            (self.controls.add_pdf_requested, self.add_pdf_requested),
+            (self.controls.save_project_requested, self.save_project_requested),
+            (self.controls.load_project_requested, self.load_project_requested),
+            (self.controls.remove_pdf_requested, self.remove_pdf_requested),
+            (self.controls.previous_page_requested, self.previous_page_requested),
+            (self.controls.next_page_requested, self.next_page_requested),
+            (self.controls.add_video_requested, self.add_video_requested),
+            (self.controls.toggle_video_requested, self.toggle_video_requested),
+            (self.controls.settings_requested, self.settings_requested),
+            (self.controls.pdf_selected, self.pdf_selected),
+        )
+        for source, target in connections:
+            source.connect(target)
 
     def _install_shortcuts(self) -> None:
-        next_action = QAction(self)
-        next_action.setShortcut(QKeySequence(Qt.Key.Key_Right))
-        next_action.triggered.connect(self.next_page_requested.emit)
-        self.addAction(next_action)
+        shortcuts = (
+            (Qt.Key.Key_Right, self.next_page_requested.emit),
+            (Qt.Key.Key_Left, self.previous_page_requested.emit),
+            (Qt.Key.Key_Escape, self.controls.show_controls),
+        )
+        for key, slot in shortcuts:
+            action = QAction(self)
+            action.setShortcut(QKeySequence(key))
+            action.triggered.connect(
+                lambda _checked=False, callback=slot: callback()
+            )
+            self.addAction(action)
 
-        previous_action = QAction(self)
-        previous_action.setShortcut(QKeySequence(Qt.Key.Key_Left))
-        previous_action.triggered.connect(self.previous_page_requested.emit)
-        self.addAction(previous_action)
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._position_controls()
 
-    @staticmethod
-    def _section_label(text: str) -> QLabel:
-        label = QLabel(text)
-        label.setObjectName("sectionTitle")
-        return label
-
-    @staticmethod
-    def _button(text: str, slot, accent: bool = False, danger: bool = False) -> QPushButton:
-        button = QPushButton(text)
-        if accent:
-            button.setObjectName("accentButton")
-        elif danger:
-            button.setObjectName("dangerButton")
-        button.clicked.connect(slot)
-        return button
-
-    def set_playlist(self, items: list[ScoreItem], current_index: int) -> None:
-        self.playlist.blockSignals(True)
-        self.playlist.clear()
-
-        for item in items:
-            text = item.display_name
-            if not item.pdf_path.exists():
-                text = f"⚠ {text}"
-            self.playlist.addItem(text)
-
-        self.playlist.setCurrentRow(current_index if items else -1)
-        self.playlist.blockSignals(False)
-
-    def set_score_info(self, item: ScoreItem | None, current_page: int, page_count: int) -> None:
-        if item is None:
-            self.score_title.setText("Sin PDF cargado")
-            self.page_info.setText("")
-            return
-
-        self.score_title.setText(item.display_name)
-        self.page_info.setText(
-            f"Página {current_page + 1} de {page_count}"
-            if page_count
-            else "No disponible"
+    def _position_controls(self) -> None:
+        margin = 18
+        size = self.controls.sizeHint()
+        width = min(
+            size.width(),
+            max(260, self.centralWidget().width() - margin * 2),
+        )
+        self.controls.setGeometry(
+            margin,
+            margin,
+            width,
+            size.height(),
         )
 
+    def set_playlist(self, items: list[ScoreItem], current_index: int) -> None:
+        self.controls.set_playlist(items, current_index)
+
+    def set_score_info(
+        self,
+        item: ScoreItem | None,
+        current_page: int,
+        page_count: int,
+    ) -> None:
+        if item is None:
+            self.controls.set_page_info("")
+            return
+
+        if page_count:
+            end_page = min(current_page + 2, page_count)
+            self.controls.set_page_info(
+                f"{item.display_name}  ·  "
+                f"{current_page + 1}–{end_page}/{page_count}"
+            )
+        else:
+            self.controls.set_page_info(
+                f"{item.display_name}  ·  PDF unavailable"
+            )
+
     def set_status(self, text: str) -> None:
-        self.status.showMessage(text)
+        self.controls.set_status(text)
+        self.controls.show_controls()
 
     def open_pdf_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Seleccionar partitura",
+            "Select PDF Score",
             "",
-            "Partituras PDF (*.pdf)",
+            "PDF Scores (*.pdf)",
         )
         return Path(path) if path else None
 
     def save_project_dialog(self) -> Path | None:
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Guardar lista",
+            "Save VDP Project",
             "",
-            "Proyecto VDP (*.vdp)",
+            "VDP Projects (*.vdp)",
         )
         return Path(path) if path else None
 
     def load_project_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Cargar lista",
+            "Load VDP Project",
             "",
-            "Proyecto VDP (*.vdp)",
+            "VDP Projects (*.vdp)",
         )
         return Path(path) if path else None
 
     def choose_video_dialog(self) -> Path | None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Seleccionar video",
+            "Select Video",
             "",
             "Videos (*.mp4 *.avi *.mov *.mkv *.webm)",
         )

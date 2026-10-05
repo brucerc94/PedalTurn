@@ -10,31 +10,118 @@ QWidget {
     color: #e8edf2;
 }
 
-QFrame#sidebar {
-    background: #181e26;
-    border-right: 1px solid #2a313b;
+QPushButton {
+    background: #252d37;
+    border: 1px solid #343e4a;
+    border-radius: 7px;
+    padding: 8px 10px;
 }
 
-QLabel#appTitle {
-    font-size: 18pt;
-    font-weight: 700;
-    color: #ffffff;
+QPushButton:hover {
+    background: #303a47;
 }
 
-QLabel#sectionTitle {
-    color: #7f8c9d;
-    font-size: 8.5pt;
-    font-weight: 700;
+QPushButton:pressed {
+    background: #1f2630;
 }
 
-QLabel#scoreTitle {
+QPushButton#accentButton {
+    background: #2c71d9;
+    border-color: #2c71d9;
+    color: white;
+}
+
+QPushButton#accentButton:hover {
+    background: #3881ee;
+}
+
+QPushButton#dangerButton {
+    color: #ffb4b4;
+}
+
+QFrame#floatingPanel {
+    background: rgba(15, 20, 26, 235);
+    border: 1px solid #3b4654;
+    border-radius: 10px;
+}
+
+QToolButton#floatingHandle {
+    background: rgba(15, 20, 26, 225);
+    border: 1px solid #3b4654;
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: #e8edf2;
     font-size: 12pt;
-    font-weight: 700;
-    color: #ffffff;
 }
 
-QLabel#pageInfo, QLabel#statusLabel {
-    color: #9ca9b7;
+QToolButton#floatingHandle:hover {
+    background: #252d37;
+}
+
+QPushButton#playlistButton {
+    background: #202833;
+    border: 1px solid #3b4654;
+    text-align: left;
+    min-width: 220px;
+}
+
+QPushButton#playlistButton:hover {
+    background: #2b3541;
+}
+
+QFrame#playlistPopup {
+    background: #121820;
+    border: 1px solid #3b4654;
+    border-radius: 10px;
+}
+
+QLabel#playlistPopupTitle {
+    color: #f4f7fa;
+    font-size: 9pt;
+    font-weight: 700;
+}
+
+QLabel#playlistPopupCount {
+    color: #7f8c9d;
+}
+
+QListWidget#playlistList {
+    background: #0f141a;
+    border: 1px solid #2a313b;
+    border-radius: 7px;
+    padding: 5px;
+    outline: none;
+}
+
+QListWidget#playlistList::item {
+    padding: 9px 8px;
+    border-radius: 6px;
+}
+
+QListWidget#playlistList::item:hover {
+    background: #252d37;
+}
+
+QListWidget#playlistList::item:selected {
+    background: #2c71d9;
+    color: white;
+}
+
+QComboBox {
+    background: #0f141a;
+    border: 1px solid #343e4a;
+    border-radius: 6px;
+    padding: 7px;
+}
+
+QLabel#floatingPageInfo {
+    color: #c8d2dc;
+    padding: 0 5px;
+}
+
+QLabel#floatingStatus {
+    color: #7f8c9d;
+    padding: 0 4px;
 }
 
 QListWidget {
@@ -53,85 +140,5 @@ QListWidget::item {
 QListWidget::item:selected {
     background: #2c71d9;
     color: white;
-}
-
-QPushButton {
-    background: #252d37;
-    border: 1px solid #343e4a;
-    border-radius: 7px;
-    padding: 9px 12px;
-    text-align: left;
-}
-
-QPushButton:hover {
-    background: #303a47;
-}
-
-QPushButton:pressed {
-    background: #1f2630;
-}
-
-QPushButton#accentButton {
-    background: #2c71d9;
-    border-color: #2c71d9;
-}
-
-QPushButton#accentButton:hover {
-    background: #3881ee;
-}
-
-QPushButton#dangerButton {
-    color: #ffb4b4;
-}
-
-QToolButton {
-    border: none;
-    padding: 6px;
-}
-
-QStatusBar {
-    background: #0f141a;
-    color: #9ca9b7;
-}
-
-QGroupBox {
-    border: 1px solid #2a313b;
-    border-radius: 8px;
-    margin-top: 12px;
-    padding-top: 10px;
-}
-
-QGroupBox::title {
-    subcontrol-origin: margin;
-    left: 12px;
-    padding: 0 4px;
-    color: #8d9aaa;
-}
-
-QComboBox, QSpinBox {
-    background: #0f141a;
-    border: 1px solid #343e4a;
-    border-radius: 6px;
-    padding: 7px;
-}
-
-QDialogButtonBox QPushButton {
-    min-width: 90px;
-    text-align: center;
-}
-
-QSplitter::handle {
-    background: #2a313b;
-}
-
-QScrollBar:vertical {
-    width: 10px;
-    background: #10151b;
-}
-
-QScrollBar::handle:vertical {
-    background: #364250;
-    border-radius: 5px;
-    min-height: 25px;
 }
 """
