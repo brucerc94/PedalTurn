@@ -60,7 +60,7 @@ class ScoreViewer(QWidget):
             painter.drawText(
                 self.rect(),
                 Qt.AlignmentFlag.AlignCenter,
-                "Agrega una partitura PDF para comenzar",
+                "Add a PDF score to get started",
             )
             return
 
@@ -93,7 +93,10 @@ class ScoreViewer(QWidget):
             target = page.rect()
             target.setSize(size)
             target.moveTo(x, y)
-            painter.fillRect(target.adjusted(-2, -2, 2, 2), Qt.GlobalColor.white)
+            painter.fillRect(
+                target.adjusted(-2, -2, 2, 2),
+                Qt.GlobalColor.white,
+            )
             painter.drawPixmap(target, page)
             x += size.width() + gap
 
