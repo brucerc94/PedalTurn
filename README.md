@@ -28,6 +28,7 @@ pdf_page_changer/
 - Renderizado de páginas manteniendo la proporción.
 - Evita duplicar el mismo PDF en la cola.
 - Interfaz optimizada para pianistas: la partitura ocupa toda la ventana y los controles flotantes se ocultan automáticamente después de 3,5 segundos.
+- La cola de partituras se muestra en un popup flotante mediante Partituras (N), sin ocupar espacio permanente del visor.
 
 ## Requisitos
 
