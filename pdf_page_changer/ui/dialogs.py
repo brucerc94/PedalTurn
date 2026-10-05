@@ -108,10 +108,7 @@ class SettingsDialog(QDialog):
 
         self.resolution = QComboBox()
         for option in self.RESOLUTIONS:
-            self.resolution.addItem(
-                option.label,
-                (option.width, option.height),
-            )
+            self.resolution.addItem(option.label, (option.width, option.height))
 
         index = next(
             (
