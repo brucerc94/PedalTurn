@@ -20,7 +20,7 @@ if errorlevel 1 goto :error
 if errorlevel 1 goto :error
 
 echo Building executable...
-"venv\Scripts\python.exe" -m PyInstaller --clean --noconfirm --onefile --windowed --name PDFPageChangerPiano --icon icono.ico --hidden-import PySide6.QtMultimedia --hidden-import PySide6.QtMultimediaWidgets PageChangerPiano.py
+"venv\Scripts\python.exe" -m PyInstaller --clean --noconfirm --onefile --windowed --name PDFPageChangerPiano --icon icono.ico --collect-all PySide6.QtMultimedia --hidden-import PySide6.QtMultimedia --hidden-import PySide6.QtMultimediaWidgets PageChangerPiano.py
 if errorlevel 1 goto :error
 
 echo.
