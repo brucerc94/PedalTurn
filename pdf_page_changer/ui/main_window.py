@@ -53,20 +53,20 @@ class MainWindow(QMainWindow):
         self._position_controls()
 
     def _build_connections(self) -> None:
-        signals = (
-            ("add_pdf_requested", self.controls.add_pdf_requested),
-            ("save_project_requested", self.controls.save_project_requested),
-            ("load_project_requested", self.controls.load_project_requested),
-            ("remove_pdf_requested", self.controls.remove_pdf_requested),
-            ("previous_page_requested", self.controls.previous_page_requested),
-            ("next_page_requested", self.controls.next_page_requested),
-            ("add_video_requested", self.controls.add_video_requested),
-            ("toggle_video_requested", self.controls.toggle_video_requested),
-            ("settings_requested", self.controls.settings_requested),
-            ("pdf_selected", self.controls.pdf_selected),
+        connections = (
+            (self.controls.add_pdf_requested, self.add_pdf_requested),
+            (self.controls.save_project_requested, self.save_project_requested),
+            (self.controls.load_project_requested, self.load_project_requested),
+            (self.controls.remove_pdf_requested, self.remove_pdf_requested),
+            (self.controls.previous_page_requested, self.previous_page_requested),
+            (self.controls.next_page_requested, self.next_page_requested),
+            (self.controls.add_video_requested, self.add_video_requested),
+            (self.controls.toggle_video_requested, self.toggle_video_requested),
+            (self.controls.settings_requested, self.settings_requested),
+            (self.controls.pdf_selected, self.pdf_selected),
         )
-        for name, source in signals:
-            getattr(source, "connect")(getattr(self, name))
+        for source, target in connections:
+            source.connect(target)
 
     def _install_shortcuts(self) -> None:
         shortcuts = (
