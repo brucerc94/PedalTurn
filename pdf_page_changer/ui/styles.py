@@ -58,7 +58,56 @@ QToolButton#floatingHandle:hover {
     background: #252d37;
 }
 
-QComboBox#floatingQueue, QComboBox {
+QPushButton#playlistButton {
+    background: #202833;
+    border: 1px solid #3b4654;
+    text-align: left;
+    min-width: 220px;
+}
+
+QPushButton#playlistButton:hover {
+    background: #2b3541;
+}
+
+QFrame#playlistPopup {
+    background: #121820;
+    border: 1px solid #3b4654;
+    border-radius: 10px;
+}
+
+QLabel#playlistPopupTitle {
+    color: #f4f7fa;
+    font-size: 9pt;
+    font-weight: 700;
+}
+
+QLabel#playlistPopupCount {
+    color: #7f8c9d;
+}
+
+QListWidget#playlistList {
+    background: #0f141a;
+    border: 1px solid #2a313b;
+    border-radius: 7px;
+    padding: 5px;
+    outline: none;
+}
+
+QListWidget#playlistList::item {
+    padding: 9px 8px;
+    border-radius: 6px;
+}
+
+QListWidget#playlistList::item:hover {
+    background: #252d37;
+}
+
+QListWidget#playlistList::item:selected {
+    background: #2c71d9;
+    color: white;
+}
+
+QComboBox {
     background: #0f141a;
     border: 1px solid #343e4a;
     border-radius: 6px;
