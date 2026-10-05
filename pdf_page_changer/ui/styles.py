@@ -142,3 +142,23 @@ QListWidget::item:selected {
     color: white;
 }
 """
+
+
+QLabel#sourceLink {
+    background: rgba(0, 0, 0, 150);
+    color: #aeb9c6;
+    border: 1px solid rgba(59, 70, 84, 170);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 8pt;
+}
+
+QLabel#sourceLink a {
+    color: #b9c8d8;
+    text-decoration: none;
+}
+
+QLabel#sourceLink a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
