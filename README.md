@@ -14,6 +14,13 @@
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows">
 </p>
 
+## Download
+
+The latest Windows build is available in [GitHub Releases](../../releases/latest).
+
+Download the latest version:
+**PedalTurn-v1.0.0-win64.zip**
+
 ## Overview
 
 PedalTurn is a modern, distraction-free score viewer designed for musicians who need reliable hands-free page turning while performing.
