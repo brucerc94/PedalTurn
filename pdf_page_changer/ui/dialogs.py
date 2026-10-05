@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QTimer, Signal
+from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtWidgets import QComboBox, QDialog, QFormLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QVBoxLayout
 
 from ..services.midi_service import MidiDevice
@@ -17,7 +17,7 @@ class MidiDeviceDialog(QDialog):
         self.list_widget = QListWidget()
         for device in devices:
             item = QListWidgetItem(device.name)
-            item.setData(256, device.device_id)
+            item.setData(Qt.ItemDataRole.UserRole, device.device_id)
             self.list_widget.addItem(item)
         select = QPushButton("Seleccionar")
         cancel = QPushButton("Cancelar")
@@ -34,7 +34,7 @@ class MidiDeviceDialog(QDialog):
     @property
     def selected_device_id(self) -> int | None:
         item = self.list_widget.currentItem()
-        return item.data(256) if item else None
+        return item.data(Qt.ItemDataRole.UserRole) if item else None
 
 
 class MidiCaptureDialog(QDialog):
