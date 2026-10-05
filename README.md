@@ -63,6 +63,8 @@ The middle pedal is only a recommendation for pianists. The user can choose anot
 
 PedalTurn can be used by guitarists, violinists, singers, wind players, and other musicians.
 
+It can also be useful outside live performance whenever hands-free score navigation is helpful.
+
 Simply connect a compatible MIDI controller or pedal and assign the control you want to use for page turning.
 
 The important requirement is that the selected control sends a MIDI Control Change (CC) message that PedalTurn can detect.
@@ -89,7 +91,9 @@ Load multiple PDF scores and switch between them from a compact floating playlis
 
 ### Video playback
 
-Attach one video to each PDF score. Videos play in a separate Qt Multimedia window, loop automatically, preserve aspect ratio, and remember their last window position.
+Attach one video to each PDF score. Video playback is optional and is not limited to performance use. It can also be useful for rehearsals, tutorials, demonstrations, reference material, backing content, visual guidance, or any other workflow where a video needs to stay associated with a score.
+
+Videos play in a separate Qt Multimedia window, loop automatically, preserve aspect ratio, and remember their last window position.
 
 ## Features
 
@@ -98,7 +102,7 @@ Attach one video to each PDF score. Videos play in a separate Qt Multimedia wind
 | PDF | Two-page spreads, aspect-ratio preservation, page navigation, zoom, LRU page cache |
 | MIDI | Device discovery, device selection, automatic CC detection, channel-independent CC handling, press-edge triggering |
 | Video | MP4/AVI/MOV/MKV/WebM support depending on the installed Qt Multimedia backend, looping playback, persistent window position |
-| Projects | Version 2 `.vdp` format with legacy project compatibility |
+| Projects | Save and restore complete PDF playlists, optional video associations, version 2 `.vdp` format with legacy project compatibility |
 | UI | PySide6 / Qt 6, dark theme, floating controls, auto-hide behavior, no Tkinter |
 | Reliability | No global application state, clean PDF/MIDI/video shutdown, duplicate-PDF prevention |
 
@@ -144,7 +148,22 @@ For other instruments, use whichever pedal or MIDI control best fits your setup.
 
 If your MIDI controller allows physical keys or other controls to be mapped to MIDI Control Change messages, those mapped controls can also be assigned.
 
-## VDP Projects
+## Saved Score Playlists
+
+PedalTurn can save an entire score playlist as a `.vdp` project file. This means you do not need to select every PDF again each time you use the application.
+
+A saved project can contain:
+
+- Multiple PDF scores in a specific order
+- An optional video associated with each score
+- The paths required to restore the playlist later
+
+The workflow is simple:
+
+1. Add the PDF scores you want.
+2. Organize them in the playlist.
+3. Save the playlist as a `.vdp` project.
+4. Load the project later to restore the configured score list instead of selecting every PDF again.
 
 The current project format is versioned:
 
