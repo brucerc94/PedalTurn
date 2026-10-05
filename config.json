@@ -1,5 +1,8 @@
 {
   "video_width": 1280,
   "video_height": 720,
-  "midi_pedal_cc": 66
+  "midi_pedal_cc": 66,
+  "midi_device_name": "CASIO USB-MIDI",
+  "video_x": null,
+  "video_y": null
 }
