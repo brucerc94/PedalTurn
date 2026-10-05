@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ========================================
-echo PDF Page Changer Piano - Run
+echo PedalTurn - Run
 echo ========================================
 echo.
 
@@ -52,7 +52,7 @@ python -c "import PySide6, pymupdf, pygame" >nul 2>&1
 if errorlevel 1 goto :deps_error
 
 echo Virtual environment ready.
-echo Starting PDF Page Changer Piano...
+echo Starting PedalTurn...
 echo.
 
 python "PageChangerPiano.py"
