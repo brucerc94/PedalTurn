@@ -25,16 +25,20 @@ class ConfigService:
 
         try:
             raw = json.loads(self._config_path.read_text(encoding="utf-8"))
-            return AppConfig(
-                video_width=self._positive_int(raw.get("video_width"), 1280),
-                video_height=self._positive_int(raw.get("video_height"), 720),
-                midi_pedal_cc=self._optional_int(raw.get("midi_pedal_cc")),
-                midi_device_name=self._optional_text(raw.get("midi_device_name")),
-                video_x=self._optional_int(raw.get("video_x")),
-                video_y=self._optional_int(raw.get("video_y")),
-            )
-        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        except (OSError, ValueError, TypeError):
             return AppConfig()
+
+        if not isinstance(raw, dict):
+            return AppConfig()
+
+        return AppConfig(
+            video_width=self._positive_int(raw.get("video_width"), 1280),
+            video_height=self._positive_int(raw.get("video_height"), 720),
+            midi_pedal_cc=self._optional_int(raw.get("midi_pedal_cc")),
+            midi_device_name=self._optional_text(raw.get("midi_device_name")),
+            video_x=self._optional_int(raw.get("video_x")),
+            video_y=self._optional_int(raw.get("video_y")),
+        )
 
     def save(self, config: AppConfig) -> None:
         self._config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -46,8 +50,8 @@ class ConfigService:
     @staticmethod
     def _positive_int(value: object, default: int) -> int:
         try:
-            value = int(value)
-            return value if value > 0 else default
+            number = int(value)
+            return number if number > 0 else default
         except (TypeError, ValueError):
             return default
 

@@ -14,3 +14,7 @@ class AppPaths:
     @classmethod
     def config_file(cls) -> Path:
         return cls.base_directory() / "config.json"
+
+    @classmethod
+    def icon_file(cls) -> Path:
+        return cls.base_directory() / "icono.ico"

@@ -4,7 +4,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 
-import fitz
+import pymupdf
 
 
 class PdfServiceError(RuntimeError):
@@ -22,7 +22,7 @@ class PdfService:
     def __init__(self, render_scale: float = 2.0, cache_size: int = 8):
         self._render_scale = render_scale
         self._cache_size = cache_size
-        self._document: fitz.Document | None = None
+        self._document: pymupdf.Document | None = None
         self._path: Path | None = None
         self._cache: OrderedDict[int, PageImage] = OrderedDict()
 
@@ -37,17 +37,17 @@ class PdfService:
     def open(self, path: Path) -> int:
         self.close()
         try:
-            document = fitz.open(path)
+            document = pymupdf.open(path)
         except Exception as exc:
-            raise PdfServiceError(f"No se pudo abrir el PDF: {path}") from exc
+            raise PdfServiceError(f"Could not open PDF: {path}") from exc
 
         if document.needs_pass:
             document.close()
-            raise PdfServiceError("El PDF está protegido con contraseña.")
+            raise PdfServiceError("The PDF is password-protected.")
 
         if len(document) == 0:
             document.close()
-            raise PdfServiceError("El PDF no contiene páginas.")
+            raise PdfServiceError("The PDF contains no pages.")
 
         self._document = document
         self._path = path
@@ -56,9 +56,9 @@ class PdfService:
 
     def render_page(self, page_index: int) -> PageImage:
         if self._document is None:
-            raise PdfServiceError("No hay ningún PDF abierto.")
+            raise PdfServiceError("No PDF is open.")
         if not 0 <= page_index < len(self._document):
-            raise PdfServiceError(f"Página fuera de rango: {page_index + 1}")
+            raise PdfServiceError(f"Page out of range: {page_index + 1}")
 
         cached = self._cache.get(page_index)
         if cached is not None:
@@ -68,8 +68,8 @@ class PdfService:
         try:
             page = self._document.load_page(page_index)
             pixmap = page.get_pixmap(
-                matrix=fitz.Matrix(self._render_scale, self._render_scale),
-                colorspace=fitz.csRGB,
+                matrix=pymupdf.Matrix(self._render_scale, self._render_scale),
+                colorspace=pymupdf.csRGB,
                 alpha=False,
             )
             image = PageImage(
@@ -79,16 +79,20 @@ class PdfService:
             )
         except Exception as exc:
             raise PdfServiceError(
-                f"No se pudo renderizar la página {page_index + 1}."
+                f"Could not render page {page_index + 1}."
             ) from exc
 
         self._cache[page_index] = image
         self._cache.move_to_end(page_index)
+
         while len(self._cache) > self._cache_size:
             self._cache.popitem(last=False)
+
         return image
 
     def render_spread(self, first_page: int) -> list[PageImage]:
+        if not 0 <= first_page < self.page_count:
+            return []
         pages = [self.render_page(first_page)]
         second_page = first_page + 1
         if second_page < self.page_count:
