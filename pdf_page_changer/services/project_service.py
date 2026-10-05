@@ -31,23 +31,31 @@ class ProjectFileService:
                 encoding="utf-8",
             )
         except OSError as exc:
-            raise ProjectFileError(f"No se pudo guardar el proyecto: {exc}") from exc
+            raise ProjectFileError(
+                f"Could not save project: {exc}"
+            ) from exc
 
     def load(self, file_path: Path) -> list[ScoreItem]:
         try:
             raw = json.loads(file_path.read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError) as exc:
-            raise ProjectFileError(f"No se pudo leer el proyecto: {exc}") from exc
+            raise ProjectFileError(
+                f"Could not read project: {exc}"
+            ) from exc
 
         if not isinstance(raw, dict):
-            raise ProjectFileError("El proyecto no contiene un objeto JSON válido.")
+            raise ProjectFileError(
+                "The project does not contain a valid JSON object."
+            )
 
         try:
             if isinstance(raw.get("items"), list):
                 return self._load_v2(raw["items"])
             return self._load_legacy(raw)
         except (TypeError, ValueError) as exc:
-            raise ProjectFileError(f"Formato de proyecto inválido: {exc}") from exc
+            raise ProjectFileError(
+                f"Invalid project format: {exc}"
+            ) from exc
 
     def _load_v2(self, items: list[object]) -> list[ScoreItem]:
         result: list[ScoreItem] = []
@@ -64,7 +72,7 @@ class ProjectFileService:
         video_map = raw.get("video_map", {})
 
         if not isinstance(pdf_queue, list):
-            raise ValueError("pdf_queue debe ser una lista")
+            raise ValueError("pdf_queue must be a list")
         if not isinstance(video_map, dict):
             video_map = {}
 
@@ -79,7 +87,7 @@ class ProjectFileService:
     @staticmethod
     def _required_path(value: object) -> Path:
         if not isinstance(value, str) or not value.strip():
-            raise ValueError("cada PDF debe tener una ruta válida")
+            raise ValueError("Each PDF must have a valid path")
         return Path(value)
 
     @staticmethod
