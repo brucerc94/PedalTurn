@@ -4,7 +4,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 
-import fitz
+import pymupdf
 
 
 class PdfServiceError(RuntimeError):
@@ -22,7 +22,7 @@ class PdfService:
     def __init__(self, render_scale: float = 2.0, cache_size: int = 8):
         self._render_scale = render_scale
         self._cache_size = cache_size
-        self._document: fitz.Document | None = None
+        self._document: pymupdf.Document | None = None
         self._path: Path | None = None
         self._cache: OrderedDict[int, PageImage] = OrderedDict()
 
@@ -37,7 +37,7 @@ class PdfService:
     def open(self, path: Path) -> int:
         self.close()
         try:
-            document = fitz.open(path)
+            document = pymupdf.open(path)
         except Exception as exc:
             raise PdfServiceError(f"No se pudo abrir el PDF: {path}") from exc
 
@@ -68,8 +68,8 @@ class PdfService:
         try:
             page = self._document.load_page(page_index)
             pixmap = page.get_pixmap(
-                matrix=fitz.Matrix(self._render_scale, self._render_scale),
-                colorspace=fitz.csRGB,
+                matrix=pymupdf.Matrix(self._render_scale, self._render_scale),
+                colorspace=pymupdf.csRGB,
                 alpha=False,
             )
             image = PageImage(
