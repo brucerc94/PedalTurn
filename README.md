@@ -71,6 +71,16 @@ The important requirement is that the selected control sends a MIDI Control Chan
 
 Some MIDI controllers can also map physical keys or other controls to a MIDI CC. When configured that way, those controls can be used for page turning as well.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/Screenshot1.jpg" alt="PedalTurn interface" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/Screenshot2.jpg" alt="PedalTurn settings and MIDI configuration" width="900">
+</p>
+
 ## Highlights
 
 ### Distraction-free score view
