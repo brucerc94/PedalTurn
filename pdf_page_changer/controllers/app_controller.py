@@ -256,16 +256,30 @@ class AppController:
         self._stop_video()
         self._state.current_index = index
         self._state.current_page = 0
-        if self._open_current_pdf() and page is not None:
-            self._state.current_page = min(page, max(0, self._pdf_service.page_count - 1))
-            self._render_current_spread()
-        elif self._open_current_pdf() and page is None:
-            self._state.current_page = self._navigator.last_spread_start(self._pdf_service.page_count)
-            self._render_current_spread()
-        if was_visible and self._state.current_item and self._state.current_item.video_path:
+
+        if not self._open_current_pdf(render=False):
+            return
+
+        if page is None:
+            self._state.current_page = self._navigator.last_spread_start(
+                self._pdf_service.page_count
+            )
+        else:
+            self._state.current_page = min(
+                page,
+                max(0, self._pdf_service.page_count - 1),
+            )
+
+        self._render_current_spread()
+
+        if (
+            was_visible
+            and self._state.current_item
+            and self._state.current_item.video_path
+        ):
             self.toggle_video()
 
-    def _open_current_pdf(self) -> bool:
+    def _open_current_pdf(self, render: bool = True) -> bool:
         item = self._state.current_item
         if item is None:
             self._clear_current_pdf()
