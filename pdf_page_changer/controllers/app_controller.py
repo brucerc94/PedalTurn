@@ -298,7 +298,8 @@ class AppController:
             QMessageBox.critical(self._window, "PDF", str(exc))
             self._sync_ui()
             return False
-        self._render_current_spread()
+        if render:
+            self._render_current_spread()
         return True
 
     def _render_current_spread(self) -> None:
