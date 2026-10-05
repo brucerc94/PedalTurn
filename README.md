@@ -156,7 +156,3 @@ PDFPageChangerPiano/
 ## Project Status
 
 This branch contains the modular refactor of the original application. The legacy Tkinter UI has been replaced with PySide6, while PDF, MIDI, project, configuration, and media responsibilities are separated into dedicated modules.
-
-## Author
-
-**Bruno Rivas Centty**
