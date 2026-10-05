@@ -47,7 +47,7 @@ class FloatingControls(QFrame):
         popup_layout.setContentsMargins(12, 12, 12, 12)
         popup_layout.setVerticalSpacing(8)
 
-        popup_title = QLabel("PARTITURAS")
+        popup_title = QLabel("SCORES")
         popup_title.setObjectName("playlistPopupTitle")
         self._playlist_count = QLabel()
         self._playlist_count.setObjectName("playlistPopupCount")
@@ -56,7 +56,12 @@ class FloatingControls(QFrame):
         header_layout = QGridLayout(popup_header)
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.addWidget(popup_title, 0, 0)
-        header_layout.addWidget(self._playlist_count, 0, 1, Qt.AlignmentFlag.AlignRight)
+        header_layout.addWidget(
+            self._playlist_count,
+            0,
+            1,
+            Qt.AlignmentFlag.AlignRight,
+        )
 
         self._playlist = QListWidget()
         self._playlist.setObjectName("playlistList")
@@ -72,12 +77,12 @@ class FloatingControls(QFrame):
         self._handle = QToolButton(self)
         self._handle.setObjectName("floatingHandle")
         self._handle.setText("☰")
-        self._handle.setToolTip("Mostrar controles")
+        self._handle.setToolTip("Show controls")
         self._handle.clicked.connect(self.show_controls)
 
-        self._playlist_button = QPushButton("Partituras (0)")
+        self._playlist_button = QPushButton("Scores (0)")
         self._playlist_button.setObjectName("playlistButton")
-        self._playlist_button.setToolTip("Mostrar la cola de partituras")
+        self._playlist_button.setToolTip("Show score playlist")
         self._playlist_button.clicked.connect(self.toggle_playlist)
 
         self._page_info = QLabel()
@@ -102,7 +107,7 @@ class FloatingControls(QFrame):
             self.previous_page_requested.emit,
             0,
             4,
-            "Página anterior",
+            "Previous page",
         )
         self._add_button(
             layout,
@@ -110,7 +115,7 @@ class FloatingControls(QFrame):
             self.next_page_requested.emit,
             0,
             5,
-            "Página siguiente",
+            "Next page",
             "accentButton",
         )
         layout.addWidget(self._page_info, 0, 6, 1, 5)
@@ -121,32 +126,32 @@ class FloatingControls(QFrame):
             self.add_pdf_requested.emit,
             1,
             0,
-            "Agregar PDF",
+            "Add PDF",
             "accentButton",
         )
         self._add_button(
             layout,
-            "Guardar",
+            "Save",
             self.save_project_requested.emit,
             1,
             1,
-            "Guardar lista",
+            "Save playlist",
         )
         self._add_button(
             layout,
-            "Cargar",
+            "Load",
             self.load_project_requested.emit,
             1,
             2,
-            "Cargar lista",
+            "Load playlist",
         )
         self._add_button(
             layout,
-            "Eliminar",
+            "Remove",
             self.remove_pdf_requested.emit,
             1,
             3,
-            "Eliminar PDF",
+            "Remove PDF",
             "dangerButton",
         )
         self._add_button(
@@ -155,7 +160,7 @@ class FloatingControls(QFrame):
             self.add_video_requested.emit,
             1,
             4,
-            "Agregar video",
+            "Add video",
         )
         self._add_button(
             layout,
@@ -163,19 +168,40 @@ class FloatingControls(QFrame):
             self.toggle_video_requested.emit,
             1,
             5,
-            "Mostrar u ocultar video",
+            "Show or hide video",
         )
         self._add_button(
             layout,
-            "Config",
+            "Settings",
             self.settings_requested.emit,
             1,
             6,
-            "Configuración",
+            "Settings",
         )
-        self._add_button(layout, "−", self._zoom_out, 1, 7, "Reducir zoom")
-        self._add_button(layout, "Ajustar", self._fit_requested, 1, 8, "Ajustar a pantalla")
-        self._add_button(layout, "+", self._zoom_in, 1, 9, "Aumentar zoom")
+        self._add_button(
+            layout,
+            "−",
+            self._zoom_out,
+            1,
+            7,
+            "Zoom out",
+        )
+        self._add_button(
+            layout,
+            "Fit",
+            self._fit_requested,
+            1,
+            8,
+            "Fit to screen",
+        )
+        self._add_button(
+            layout,
+            "+",
+            self._zoom_in,
+            1,
+            9,
+            "Zoom in",
+        )
         layout.addWidget(self._status, 1, 10)
 
         self._panel.installEventFilter(self)
@@ -224,7 +250,7 @@ class FloatingControls(QFrame):
         self._restart_hide_timer()
 
     def set_playlist(self, items, current_index: int) -> None:
-        self._playlist_button.setText(f"Partituras ({len(items)})")
+        self._playlist_button.setText(f"Scores ({len(items)})")
         self._playlist_count.setText(str(len(items)))
 
         self._playlist.blockSignals(True)
@@ -244,12 +270,14 @@ class FloatingControls(QFrame):
 
             list_item = QListWidgetItem(label)
             list_item.setData(Qt.ItemDataRole.UserRole, index)
+
             if index == current_index:
-                list_item.setToolTip("Partitura actual")
+                list_item.setToolTip("Current score")
             elif item.video_path is not None:
-                list_item.setToolTip("Tiene un video asociado")
+                list_item.setToolTip("Has an associated video")
+
             if not item.pdf_path.exists():
-                list_item.setToolTip("PDF no encontrado")
+                list_item.setToolTip("PDF not found")
 
             self._playlist.addItem(list_item)
 
