@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ========================================
-echo PDF Page Changer Piano - Build
+echo PedalTurn - Build
 echo ========================================
 echo.
 
@@ -39,12 +39,12 @@ python -m pip install -r requirements.txt
 if errorlevel 1 goto :error
 
 echo Building executable...
-python -m PyInstaller --clean --noconfirm --onefile --windowed --name PDFPageChangerPiano --icon icono.ico --collect-all PySide6.QtMultimedia --hidden-import PySide6.QtMultimedia --hidden-import PySide6.QtMultimediaWidgets PageChangerPiano.py
+python -m PyInstaller --clean --noconfirm --onefile --windowed --name PedalTurn --icon icono.ico --collect-all PySide6.QtMultimedia --hidden-import PySide6.QtMultimedia --hidden-import PySide6.QtMultimediaWidgets PageChangerPiano.py
 if errorlevel 1 goto :error
 
 echo.
 echo Build completed successfully.
-echo Executable: dist\PDFPageChangerPiano.exe
+echo Executable: dist\PedalTurn.exe
 endlocal
 exit /b 0
 
