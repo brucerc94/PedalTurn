@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="icono.ico" alt="PDF Page Changer Piano" width="96">
+  <img src="icono.ico" alt="PedalTurn" width="96">
 </p>
 
-<h1 align="center">PDF Page Changer Piano</h1>
+<h1 align="center">PedalTurn</h1>
 
 <p align="center">
-  A modern Windows score viewer with MIDI pedal page turning and optional video playback.
+  Hands-free score page turning with MIDI pedals and controllers.
 </p>
 
 <p align="center">
@@ -16,31 +16,72 @@
 
 ## Overview
 
-PDF Page Changer Piano is a distraction-free score viewer designed for pianists and keyboard players who need reliable hands-free page turning.
+PedalTurn is a modern, distraction-free score viewer designed for musicians who need reliable hands-free page turning while performing.
 
-It combines:
+It is not limited to piano. It can be used with a digital piano, MIDI keyboard, MIDI controller, or another MIDI-capable setup that provides a suitable page-turn control.
+
+PedalTurn combines:
 
 - High-quality PDF score rendering
 - Two-page spread viewing
-- MIDI Control Change pedal navigation
+- MIDI Control Change page turning
 - Optional video playback linked to each score
 - Floating controls that automatically hide while playing
 - Playlist management for multiple scores
 - Versioned `.vdp` project files
 
-The application is built with a modular architecture that separates the UI, application orchestration, navigation rules, and media services.
+The application uses a modular architecture that separates the UI, application orchestration, navigation rules, and media services.
+
+## Who Needs PedalTurn?
+
+PedalTurn requires a MIDI-capable device connected to your computer.
+
+Typical setups include:
+
+- A digital piano with MIDI/USB connected to the PC
+- A MIDI keyboard or controller connected to the PC
+- A MIDI foot pedal connected to the PC or routed through a MIDI controller
+
+The MIDI device must appear as an input device that PedalTurn can select.
+
+### For Pianists
+
+With a three-pedal digital piano, the middle pedal is a practical choice for page turning when it is not needed for the performance.
+
+The setup is:
+
+1. Connect the digital piano to the PC through its MIDI/USB connection.
+2. Open **Settings** in PedalTurn.
+3. Select the digital piano from the available MIDI input devices.
+4. Choose **Detect MIDI Page-Turn Control**.
+5. Press the pedal you want to use.
+6. PedalTurn detects the MIDI Control Change number and assigns it to page turning.
+
+The middle pedal is only a recommendation for pianists. The user can choose another suitable control depending on the instrument and performance setup.
+
+### For Other Instruments
+
+PedalTurn can be used by guitarists, violinists, singers, wind players, and other musicians.
+
+Simply connect a compatible MIDI controller or pedal and assign the control you want to use for page turning.
+
+The important requirement is that the selected control sends a MIDI Control Change (CC) message that PedalTurn can detect.
+
+Some MIDI controllers can also map physical keys or other controls to a MIDI CC. When configured that way, those controls can be used for page turning as well.
 
 ## Highlights
 
-### Pianist-focused interface
+### Distraction-free score view
 
 The score occupies the available window with minimal visual distraction. The control panel floats over the viewer and automatically hides after 3.5 seconds.
 
 Press `Esc` to bring the controls back instantly.
 
-### MIDI pedal page turning
+### Reliable MIDI page turning
 
-Connect a MIDI input device and assign any Control Change message to page turning. The pedal is edge-triggered, so holding it down does not repeatedly advance pages.
+The page-turn trigger is edge-triggered, so holding a pedal down does not repeatedly advance pages.
+
+MIDI Control Change messages are accepted independently of MIDI channel.
 
 ### Score playlist
 
@@ -55,7 +96,7 @@ Attach one video to each PDF score. Videos play in a separate Qt Multimedia wind
 | Area | Features |
 | --- | --- |
 | PDF | Two-page spreads, aspect-ratio preservation, page navigation, zoom, LRU page cache |
-| MIDI | Device discovery, device selection, automatic pedal detection, channel-independent CC handling, press-edge triggering |
+| MIDI | Device discovery, device selection, automatic CC detection, channel-independent CC handling, press-edge triggering |
 | Video | MP4/AVI/MOV/MKV/WebM support depending on the installed Qt Multimedia backend, looping playback, persistent window position |
 | Projects | Version 2 `.vdp` format with legacy project compatibility |
 | UI | PySide6 / Qt 6, dark theme, floating controls, auto-hide behavior, no Tkinter |
@@ -65,8 +106,10 @@ Attach one video to each PDF score. Videos play in a separate Qt Multimedia wind
 
 - Windows 10 or Windows 11
 - Python 3.10 or newer
-- A MIDI input device is optional
+- A MIDI-capable input device connected to the computer
 - Qt Multimedia-compatible codecs/backend for video formats that require them
+
+A MIDI device is required for pedal-based page turning. PDF viewing itself does not require a MIDI device.
 
 ## Quick Start
 
@@ -80,7 +123,7 @@ run.bat
 
 | Action | Shortcut / Control |
 | --- | --- |
-| Next spread | `Right Arrow` or MIDI pedal |
+| Next spread | `Right Arrow` or assigned MIDI control |
 | Previous spread | `Left Arrow` |
 | Show controls | `Esc` |
 | Zoom in/out | `Ctrl + Mouse Wheel` |
@@ -88,12 +131,18 @@ run.bat
 
 ## MIDI Setup
 
-1. Open **Settings**.
-2. Select the MIDI input device.
-3. Use **Detect MIDI Pedal** and press the desired pedal once.
-4. The detected Control Change number is stored in `config.json`.
+1. Connect your digital piano, MIDI keyboard, MIDI controller, or MIDI pedal to the PC.
+2. Open **Settings**.
+3. Select the MIDI input device that appears in PedalTurn.
+4. Click **Detect MIDI Page-Turn Control**.
+5. Press the pedal or other MIDI control you want to assign.
+6. PedalTurn stores the detected Control Change number in `config.json`.
 
-The MIDI layer accepts Control Change messages on any MIDI channel.
+For pianists using a three-pedal digital piano, the middle pedal is often the most convenient choice when it is not required for the performance.
+
+For other instruments, use whichever pedal or MIDI control best fits your setup.
+
+If your MIDI controller allows physical keys or other controls to be mapped to MIDI Control Change messages, those mapped controls can also be assigned.
 
 ## VDP Projects
 
@@ -119,7 +168,7 @@ Older projects that use `pdf_queue` and `video_map` remain readable.
 
 - Video window width and height
 - Selected MIDI device name
-- MIDI pedal Control Change number
+- MIDI page-turn Control Change number
 - Saved video window position
 
 When running from Python, configuration is resolved from the project directory. When running as a packaged executable, it is resolved next to the executable.
@@ -127,14 +176,14 @@ When running from Python, configuration is resolved from the project directory. 
 ## Architecture
 
 ```text
-PDFPageChangerPiano/
+PedalTurn/
 ├── pdf_page_changer/
 │   ├── core/           # Domain models and navigation rules
 │   ├── controllers/    # Application orchestration
-│   ├── services/      # PDF, MIDI, media, config, project services
-│   ├── ui/            # Qt windows, dialogs, viewer and styling
-│   ├── utils/         # Application paths
-│   └── main.py        # Application entry point
+│   ├── services/       # PDF, MIDI, media, config, project services
+│   ├── ui/             # Qt windows, dialogs, viewer and styling
+│   ├── utils/          # Application paths
+│   └── main.py         # Application entry point
 ├── PageChangerPiano.py
 ├── requirements.txt
 ├── build.bat
@@ -155,4 +204,4 @@ PDFPageChangerPiano/
 
 ## Project Status
 
-This branch contains the modular refactor of the original application. The legacy Tkinter UI has been replaced with PySide6, while PDF, MIDI, project, configuration, and media responsibilities are separated into dedicated modules.
+PedalTurn is built as a modular application with a dedicated UI layer and separate PDF, MIDI, media, configuration, and project services.
